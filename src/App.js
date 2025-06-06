@@ -1,47 +1,58 @@
+// src/App.js
+
 import React, { useState } from 'react';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
-import Header from './components/Header';
+import TempRecorderForm from './components/TempRecorderForm';
+import Header from './components/Header'; // <-- NEW
 
-function App() {
-  const [view, setView] = useState('');
+export default function App() {
+  const [view, setView] = useState('home');
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header />
+      <Header /> {/* ← Add the shared header */}
 
-      <div className="p-4">
-        {view && (
-          <button
-            onClick={() => setView('')}
-            className="mb-4 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-          >
-            ← Back to Menu
-          </button>
-        )}
-
-        {!view && (
-          <div className="flex flex-col space-y-4 items-center justify-center">
+      <div className="max-w-xl mx-auto bg-white p-6 rounded shadow text-center">
+        {view === 'home' && (
+          <div className="flex flex-col space-y-4">
             <button
-              onClick={() => setView('form')}
-              className="bg-green-600 text-white px-6 py-3 rounded text-lg shadow hover:bg-green-700"
+              onClick={() => setView('taskForm')}
+              className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
             >
-              Add Task
+              Task Form
             </button>
             <button
-              onClick={() => setView('list')}
-              className="bg-blue-600 text-white px-6 py-3 rounded text-lg shadow hover:bg-blue-700"
+              onClick={() => setView('taskList')}
+              className="bg-green-600 text-white py-2 rounded hover:bg-green-700"
             >
-              View Tasks
+              Task List
+            </button>
+            <button
+              onClick={() => setView('tempRecorder')}
+              className="bg-red-600 text-white py-2 rounded hover:bg-red-700"
+            >
+              Temp Recorder
             </button>
           </div>
         )}
 
-        {view === 'form' && <TaskForm />}
-        {view === 'list' && <TaskList />}
+        {view !== 'home' && (
+          <button
+            onClick={() => setView('home')}
+            className="mt-6 text-blue-500 underline"
+          >
+            ← Back to Home
+          </button>
+        )}
+      </div>
+
+      {/* Render appropriate view */}
+      <div className="mt-6">
+        {view === 'taskForm' && <TaskForm />}
+        {view === 'taskList' && <TaskList />}
+        {view === 'tempRecorder' && <TempRecorderForm />}
       </div>
     </div>
   );
 }
-
-export default App;
