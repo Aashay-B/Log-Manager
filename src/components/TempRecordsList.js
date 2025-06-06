@@ -64,7 +64,7 @@ export default function TempRecordsList() {
     const tableData = filteredRecords.map(record => [
       record.name,
       record.location,
-      `${record.temperature_c}°C`,
+      `${record.temperature}°C`,
       formatToPST(record.recorded_at),
     ]);
 
