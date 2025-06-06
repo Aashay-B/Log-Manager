@@ -4,14 +4,15 @@ import React, { useState } from 'react';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import TempRecorderForm from './components/TempRecorderForm';
-import Header from './components/Header'; // <-- NEW
+import TempRecordsList from './components/TempRecordsList';
+import Header from './components/Header';
 
 export default function App() {
   const [view, setView] = useState('home');
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header /> {/* ← Add the shared header */}
+      <Header />
 
       <div className="max-w-xl mx-auto bg-white p-6 rounded shadow text-center">
         {view === 'home' && (
@@ -34,6 +35,12 @@ export default function App() {
             >
               Temp Recorder
             </button>
+            <button
+              onClick={() => setView('tempList')}
+              className="bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+            >
+              View Temperature Records
+            </button>
           </div>
         )}
 
@@ -52,6 +59,7 @@ export default function App() {
         {view === 'taskForm' && <TaskForm />}
         {view === 'taskList' && <TaskList />}
         {view === 'tempRecorder' && <TempRecorderForm />}
+        {view === 'tempList' && <TempRecordsList />}
       </div>
     </div>
   );
