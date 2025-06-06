@@ -15,7 +15,7 @@ export default function TempRecorderForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const { error } = await supabase.from('temperature_logs').insert([form]);
+    const { error } = await supabase.from('temp_records').insert([form]);
 
     if (error) {
       alert('Error: ' + error.message);
