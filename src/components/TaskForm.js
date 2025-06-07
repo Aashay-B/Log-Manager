@@ -46,7 +46,8 @@ const handleSubmit = async e => {
 
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="p-6 max-w-md mx-auto bg-white shadow rounded">
+      <h2 className="text-xl font-semibold mb-4 text-center">Task Logger</h2>
       <input
         name="name"
         value={form.name}
