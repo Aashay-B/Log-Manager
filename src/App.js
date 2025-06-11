@@ -1,62 +1,114 @@
-import React, { useState, useEffect } from 'react';
+// src/App.js
+
+import React, { useState } from 'react';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import TempRecorderForm from './components/TempRecorderForm';
 import TempRecordsList from './components/TempRecordsList';
 import Header from './components/Header';
 
+const ACCESS_KEY = '1234'; // Change this to your desired key
+
 export default function App() {
   const [view, setView] = useState('home');
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [pendingView, setPendingView] = useState('');
+  const [enteredKey, setEnteredKey] = useState('');
 
-  useEffect(() => {
-    document.title = "Cioffi's Log Manager";
-  }, []);
+  const handleProtectedView = (viewName) => {
+    setPendingView(viewName);
+    setEnteredKey('');
+    setShowKeyModal(true);
+  };
+
+  const validateAccessKey = () => {
+    if (enteredKey === ACCESS_KEY) {
+      setView(pendingView);
+    } else {
+      alert('Incorrect key. Access denied.');
+    }
+    setShowKeyModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
 
-      <div className="max-w-xl mx-auto bg-white p-6 rounded shadow text-center">
-        {view === 'home' && (
-          <div className="flex flex-col items-center gap-4">
+      {/* Key Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow max-w-sm w-full">
+            <h3 className="text-lg font-semibold mb-4 text-center">Enter Access Key</h3>
+            <input
+              type="password"
+              value={enteredKey}
+              onChange={(e) => setEnteredKey(e.target.value)}
+              placeholder="Access key"
+              className="w-full border rounded p-2 mb-4"
+            />
+            <div className="flex justify-between">
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={validateAccessKey}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Home Buttons */}
+      {view === 'home' && (
+        <div className="max-w-xl mx-auto bg-white p-6 rounded shadow text-center mt-6">
+          <div className="flex flex-col space-y-4">
             <button
               onClick={() => setView('taskForm')}
-              className="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 w-full"
+              className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
             >
               Task Form
             </button>
             <button
-              onClick={() => setView('taskList')}
-              className="bg-green-600 text-white py-2 px-4 rounded-full hover:bg-green-700 w-full"
+              onClick={() => handleProtectedView('taskList')}
+              className="bg-green-600 text-white py-2 rounded hover:bg-green-700"
             >
               Task List
             </button>
             <button
               onClick={() => setView('tempRecorder')}
-              className="bg-red-600 text-white py-2 px-4 rounded-full hover:bg-red-700 w-full"
+              className="bg-red-600 text-white py-2 rounded hover:bg-red-700"
             >
               Temp Recorder
             </button>
             <button
-              onClick={() => setView('tempList')}
-              className="bg-purple-600 text-white py-2 px-4 rounded-full hover:bg-purple-700 w-full"
+              onClick={() => handleProtectedView('tempList')}
+              className="bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700"
             >
-              View Temperature Records
+              Temp Records
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {view !== 'home' && (
+      {/* Back Button */}
+      {view !== 'home' && (
+        <div className="text-center mt-4">
           <button
             onClick={() => setView('home')}
-            className="mt-6 text-blue-500 underline"
+            className="text-blue-500 underline"
           >
             ← Back to Home
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Render appropriate view */}
+      {/* Render View */}
       <div className="mt-6">
         {view === 'taskForm' && <TaskForm />}
         {view === 'taskList' && <TaskList />}
