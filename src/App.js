@@ -88,7 +88,7 @@ export default function App() {
             </button>
             <button
               onClick={() => handleProtectedView('tempList')}
-              className="bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700"
+              className="bg-purple-600 text-white py-2 rounded hover:bg-yellow-700"
             >
               Temp Records
             </button>
