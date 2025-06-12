@@ -21,6 +21,10 @@ export default function App() {
     setShowKeyModal(true);
   };
 
+   useEffect(() => {
+    document.title = "Cioffi's Log Manager";
+  }, []);
+
   const validateAccessKey = () => {
     if (enteredKey === ACCESS_KEY) {
       setView(pendingView);
