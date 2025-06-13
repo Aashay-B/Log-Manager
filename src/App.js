@@ -14,6 +14,11 @@ export default function App() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [pendingView, setPendingView] = useState('');
   const [enteredKey, setEnteredKey] = useState('');
+  const [showGifError, setShowGifError] = useState(false);
+
+  useEffect(() => {
+    document.title = "Cioffi's Log Manager";
+  }, []);
 
   const handleProtectedView = (viewName) => {
     setPendingView(viewName);
@@ -21,24 +26,21 @@ export default function App() {
     setShowKeyModal(true);
   };
 
-   useEffect(() => {
-    document.title = "Cioffi's Log Manager";
-  }, []);
-
   const validateAccessKey = () => {
     if (enteredKey === ACCESS_KEY) {
       setView(pendingView);
+      setShowKeyModal(false);
     } else {
-      alert('Incorrect key. Access denied.');
+      setShowKeyModal(false);
+      setShowGifError(true); // Show GIF error modal
     }
-    setShowKeyModal(false);
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
       <Header />
 
-      {/* Key Modal */}
+      {/* Access Key Modal */}
       {showKeyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow max-w-sm w-full">
@@ -64,6 +66,27 @@ export default function App() {
                 Submit
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* GIF Error Modal */}
+      {showGifError && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow max-w-sm w-full text-center">
+            <h3 className="text-lg font-semibold mb-2 text-red-600">Access Denied</h3>
+            <img
+              src="/who-look.gif" // 🔁 Replace this with your own GIF URL
+              alt="Access Denied"
+              className="w-48 h-48 mx-auto"
+            />
+            <p className="mt-4 text-gray-700">Incorrect key. Try again!</p>
+            <button
+              onClick={() => setShowGifError(false)}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -112,7 +135,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Render View */}
+      {/* Render Views */}
       <div className="mt-6">
         {view === 'taskForm' && <TaskForm />}
         {view === 'taskList' && <TaskList />}
