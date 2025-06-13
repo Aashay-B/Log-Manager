@@ -76,7 +76,7 @@ export default function App() {
           <div className="bg-white p-6 rounded shadow max-w-sm w-full text-center">
             <h3 className="text-lg font-semibold mb-2 text-red-600">Access Denied</h3>
             <img
-              src="/who-look.gif" // 🔁 Replace this with your own GIF URL
+              src="/denied-barney.gif" // 🔁 Replace this with your own GIF URL
               alt="Access Denied"
               className="w-48 h-48 mx-auto"
             />
