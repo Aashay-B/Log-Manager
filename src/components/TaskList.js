@@ -1,12 +1,10 @@
+// src/components/TaskList.js
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { format } from 'date-fns-tz';
-import { jsPDF } from 'jspdf'
-import { autoTable } from 'jspdf-autotable'
-
-
-// Register the plugin
-// const doc = new jsPDF()
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const PST_TIMEZONE = 'America/Los_Angeles';
 
@@ -15,7 +13,36 @@ function formatToPST(dateString) {
   return format(date, 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: PST_TIMEZONE });
 }
 
-const departments = ['All Departments', 'Meat', 'Deli', 'General Warehouse'];
+const departments = ['All Departments', 'Deli', 'Warehouse'];
+
+function Disclosure({ task }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div
+      className="bg-gray-50 border rounded p-3 shadow-sm cursor-pointer hover:bg-gray-100 transition"
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      <div className="flex justify-between items-center">
+        <div>
+          <span className="text-sm font-medium text-gray-700">{formatToPST(task.cleaning_time)}</span>
+          <span className="ml-2 text-gray-600">— {task.cleaned_by}</span>
+        </div>
+        <span className="text-xs text-blue-600">{isOpen ? 'Hide' : 'Details'}</span>
+      </div>
+
+      {isOpen && (
+        <div className="mt-3 text-sm text-gray-700 space-y-1">
+          <div><strong>Department:</strong> {task.department}</div>
+          <div><strong>Cleaned By:</strong> {task.cleaned_by}</div>
+          <div><strong>Area/Equipment:</strong> {task.area_equipment}</div>
+          <div><strong>Cleaning Time:</strong> {formatToPST(task.cleaning_time)}</div>
+          {task.comments && <div><strong>Comments:</strong> {task.comments}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TaskList() {
   const [tasks, setTasks] = useState([]);
@@ -59,53 +86,99 @@ export default function TaskList() {
     setEndDate('');
   };
 
-  
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
+  const handleExportPDF = async () => {
+  const doc = new jsPDF();
+  const logo = new Image();
+  logo.src = `${window.location.origin}/logo.png`;
 
-    // Apply export filters here
-    const exportFilteredTasks = tasks.filter(task => {
-        const matchesDept =
-        exportDept === 'All Departments' || task.department === exportDept;
+  // Wait for logo to load
+  await new Promise(resolve => {
+    logo.onload = resolve;
+  });
 
-        const taskTime = new Date(task.cleaning_time);
-        const matchesStart = exportStartDate
-        ? taskTime >= new Date(exportStartDate)
-        : true;
-        const matchesEnd = exportEndDate
-        ? taskTime <= new Date(exportEndDate + 'T23:59:59')
-        : true;
+  // Add logo
+  doc.addImage(logo, 'PNG', 7, 2, 60, 40);
 
-        return matchesDept && matchesStart && matchesEnd;
-    });
+  // Add Title
+  doc.setFontSize(14);
+  doc.text('Task Logs Export', 105, 20, { align: 'center' });
 
-    const tableHead = [['Name', 'Department', 'Cleaning Time', 'Things Cleaned']];
-    const tableBody = exportFilteredTasks.map(task => [
-        task.name,
-        task.department,
-        new Date(task.cleaning_time).toLocaleString('en-US', {
-        timeZone: 'America/Los_Angeles',
-        dateStyle: 'short',
-        timeStyle: 'short',
-        }),
-        task.things_cleaned,
-    ]);
+  // Add export date range
+  const rangeText =
+    (exportStartDate ? `From: ${exportStartDate}` : '') +
+    (exportEndDate ? ` To: ${exportEndDate}` : '');
+  doc.setFontSize(10);
+  doc.text(rangeText, 105, 28, { align: 'center' });
 
+  let yOffset = 40;
+
+  // Filter tasks based on export filters
+  const exportFilteredTasks = tasks.filter(task => {
+    const matchesDept =
+      exportDept === 'All Departments' || task.department === exportDept;
+
+    const taskTime = new Date(task.cleaning_time);
+    const matchesStart = exportStartDate
+      ? taskTime >= new Date(exportStartDate)
+      : true;
+    const matchesEnd = exportEndDate
+      ? taskTime <= new Date(exportEndDate + 'T23:59:59')
+      : true;
+
+    return matchesDept && matchesStart && matchesEnd;
+  });
+
+  // Group by department
+  const groupedTasks = {};
+  exportFilteredTasks.forEach(task => {
+    if (!groupedTasks[task.department]) {
+      groupedTasks[task.department] = [];
+    }
+    groupedTasks[task.department].push(task);
+  });
+
+  // Loop through each department
+  for (const dept of Object.keys(groupedTasks)) {
+    const deptTasks = groupedTasks[dept];
+
+    if (yOffset > 250) {
+      doc.addPage();
+      yOffset = 20;
+    }
+
+    // Department header
+    doc.setFontSize(12);
+    doc.text(dept + ' Department', 14, yOffset);
+    yOffset += 6;
+
+    // Table
     autoTable(doc, {
-        head: tableHead,
-        body: tableBody,
-        styles: { fontSize: 10 },
-        margin: { top: 20 },
-        headStyles: { fillColor: [22, 160, 133] },
+      startY: yOffset,
+      head: [['Cleaning Time', 'Cleaned By', 'Area/Equipment', 'Comments']],
+      body: deptTasks.map(task => [
+        formatToPST(task.cleaning_time),
+        task.cleaned_by,
+        task.area_equipment,
+        task.comments || '',
+      ]),
+      styles: { fontSize: 9 },
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185] },
+      margin: { left: 14, right: 14 },
+      didDrawPage: data => {
+        yOffset = data.cursor.y + 10;
+      }
     });
+  }
 
-    doc.save('tasks.pdf');
-    };
+  doc.save('tasks_by_department.pdf');
+};
 
 
   return (
     <div className="max-w-3xl mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-semibold mb-4 text-center">Task Logs</h2>
+
       {/* Filter Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div>
@@ -118,17 +191,13 @@ export default function TaskList() {
             className="px-4 py-2 border rounded w-full"
           >
             {departments.map(dept => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
+              <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-700">
-            Start Date
-          </label>
+          <label className="block mb-1 text-sm font-medium text-gray-700">Start Date</label>
           <input
             type="date"
             value={startDate}
@@ -138,9 +207,7 @@ export default function TaskList() {
         </div>
 
         <div>
-          <label className="block mb-1 text-sm font-medium text-gray-700">
-            End Date
-          </label>
+          <label className="block mb-1 text-sm font-medium text-gray-700">End Date</label>
           <input
             type="date"
             value={endDate}
@@ -158,15 +225,17 @@ export default function TaskList() {
           </button>
         </div>
       </div>
-      <div className="mb-4 text-right">  
+
       {/* Export Button */}
-      <button
-        onClick={() => setShowExport(!showExport)}
-        className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 mb-6"
-      >
-        {showExport ? 'Cancel Export' : 'Export to PDF'}
-      </button>
+      <div className="mb-4 text-right">
+        <button
+          onClick={() => setShowExport(!showExport)}
+          className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 mb-6"
+        >
+          {showExport ? 'Cancel Export' : 'Export to PDF'}
+        </button>
       </div>
+
       {/* Export Filter Section */}
       {showExport && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white p-4 rounded shadow">
@@ -178,9 +247,7 @@ export default function TaskList() {
               className="px-4 py-2 border rounded w-full"
             >
               {departments.map(dept => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
+                <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
           </div>
@@ -213,20 +280,23 @@ export default function TaskList() {
         </div>
       )}
 
-      {/* Task List */}
+      {/* Task List Section */}
       {filteredTasks.length === 0 ? (
         <p className="text-gray-600">No tasks found for selected filters.</p>
       ) : (
-        <div className="space-y-4">
-          {filteredTasks.map(task => (
-            <div key={task.id} className="bg-white shadow rounded p-2">
-              <div className="text-lg font-semibold text-gray-800">{task.name}</div>
-              <div className="text-sm text-gray-500 mb-1">{task.department}</div>
-              <div className="text-sm text-gray-600">{formatToPST(task.cleaning_time)}</div>
-              <div className="mt-2 text-gray-700">{task.things_cleaned}</div>
+        ['Deli', 'Warehouse'].map(department => {
+          const deptTasks = filteredTasks.filter(task => task.department === department);
+          if (deptTasks.length === 0) return null;
+
+          return (
+            <div key={department} className="mb-6">
+              <h3 className="text-lg font-semibold mb-2 border-b pb-1">{department} Tasks</h3>
+              {deptTasks.map(task => (
+                <Disclosure key={task.id} task={task} />
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })
       )}
     </div>
   );
