@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { fromZonedTime } from 'date-fns-tz';
+
+const PST_TIMEZONE = 'America/Los_Angeles';
 
 const departmentOptions = ['Deli', 'Warehouse'];
 
 const cleanedByOptions = {
-  Deli: ['','Tamara', 'Jimmy', 'Verna', 'Stephania', 'Navi', 'Sonam'],
-  Warehouse: ['','Gagi', 'Tate', 'Kirro']
+  Deli: ['', 'Tamara', 'Jimmy', 'Verna', 'Stephania', 'Navi', 'Sonam'],
+  Warehouse: ['', 'Gagi', 'Tate', 'Kirro']
 };
 
 const areaEquipmentOptions = {
-  Deli: ['','Floors', 'Detail Cleaning', 'End of Shift Cleaning', 'Grater', 'Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'],
-  Warehouse: ['','Floors', 'Racks', 'Detail Cleaning', 'Bins']
+  Deli: ['', 'Floors', 'Detail Cleaning', 'End of Shift Cleaning', 'Grater', 'Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'],
+  Warehouse: ['', 'Floors', 'Racks', 'Detail Cleaning', 'Bins']
 };
 
 export default function TaskForm() {
@@ -25,7 +28,6 @@ export default function TaskForm() {
   const handleChange = e => {
     const { name, value } = e.target;
 
-    // When department changes, update cleaned_by and area_equipment defaults
     if (name === 'department') {
       setForm(prev => ({
         ...prev,
@@ -41,27 +43,31 @@ export default function TaskForm() {
   const handleSubmit = async e => {
     e.preventDefault();
 
-    const localTime = new Date(form.cleaning_time);
-    const utcTime = new Date(localTime.getTime() - localTime.getTimezoneOffset() * 60000).toISOString();
+    try {
+      const pstDate = fromZonedTime(new Date(form.cleaning_time), PST_TIMEZONE);
 
-    const taskData = {
-      ...form,
-      cleaning_time: utcTime
-    };
+      const taskData = {
+        ...form,
+        cleaning_time: pstDate.toISOString()
+      };
 
-    const { error } = await supabase.from('tasks').insert([taskData]);
+      const { error } = await supabase.from('tasks').insert([taskData]);
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      alert('Cleaning log submitted!');
-      setForm({
-        department: 'Deli',
-        cleaning_time: '',
-        cleaned_by: cleanedByOptions['Deli'][0],
-        area_equipment: areaEquipmentOptions['Deli'][0],
-        comments: ''
-      });
+      if (error) {
+        alert('Error: ' + error.message);
+      } else {
+        alert('Cleaning log submitted!');
+        setForm({
+          department: 'Deli',
+          cleaning_time: '',
+          cleaned_by: cleanedByOptions['Deli'][0],
+          area_equipment: areaEquipmentOptions['Deli'][0],
+          comments: ''
+        });
+      }
+    } catch (err) {
+      console.error('Time conversion error:', err);
+      alert('Error converting time. Please check your input.');
     }
   };
 
