@@ -13,13 +13,19 @@ function formatToPST(dateString) {
 
 const LOCATIONS = [
   'All Locations',
-  'Fridge 1',
-  'Fridge 2',
-  'Fridge 3',
-  'Freezer 1',
-  'Freezer 2',
-  'Freezer 3',
-  'Dry Age Room',
+  'Deli Refrigerator 1',
+  'Deli Refrigerator 2',
+  'Deli Refrigerator 3',
+  'Deli Refrigerator 4',
+  'Deli Refrigerator 5',
+  'Deli Room',
+  'Small Meat Cooler',
+  'Deli Cooler',
+  'Dry Aging Room',
+  'Small Freezer',
+  'Big Freezer',
+  'Big Meat Cooler',
+  'Meat Cutting Room',
 ];
 
 function ExportModal({
@@ -100,22 +106,20 @@ function ExportModal({
 }
 
 export default function TempRecordsList() {
-  const [records, setRecords] = useState([]);
-  const [selectedLocation, setSelectedLocation] = useState('All Locations');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
-  // Export modal states
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [exportLocation, setExportLocation] = useState('All Locations');
-  const [exportStartDate, setExportStartDate] = useState('');
-  const [exportEndDate, setExportEndDate] = useState('');
-
-  // Dates in YYYY-MM-DD format for today and first of this month
   const todayStr = new Date().toISOString().slice(0, 10);
   const firstOfMonthStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString()
     .slice(0, 10);
+
+  const [records, setRecords] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState('All Locations');
+  const [startDate, setStartDate] = useState(firstOfMonthStr);
+  const [endDate, setEndDate] = useState(todayStr);
+
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportLocation, setExportLocation] = useState('All Locations');
+  const [exportStartDate, setExportStartDate] = useState(firstOfMonthStr);
+  const [exportEndDate, setExportEndDate] = useState(todayStr);
 
   useEffect(() => {
     fetchRecords();
@@ -191,7 +195,7 @@ export default function TempRecordsList() {
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
             className="border px-3 py-2 rounded w-full"
-            >
+          >
             {LOCATIONS.map((loc) => (
               <option key={loc} value={loc}>
                 {loc}
@@ -225,9 +229,9 @@ export default function TempRecordsList() {
       <div className="mb-4 text-right">
         <button
           onClick={() => {
-            setExportLocation('All Locations');
-            setExportStartDate(firstOfMonthStr);
-            setExportEndDate(todayStr);
+            setExportLocation(selectedLocation);
+            setExportStartDate(startDate);
+            setExportEndDate(endDate);
             setShowExportModal(true);
           }}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
