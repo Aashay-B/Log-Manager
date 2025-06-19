@@ -121,13 +121,14 @@ export default function TempRecorderForm() {
 
               <div className="flex items-center gap-3">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^-?\d*\.?\d*$"
                   value={temps[loc].value}
                   onChange={(e) => handleChange(loc, e.target.value)}
                   className="p-2 border rounded w-28 text-center"
                   placeholder={`°${temps[loc].unit}`}
                 />
-
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-600">°C</span>
 

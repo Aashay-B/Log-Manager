@@ -7,7 +7,7 @@ const PST_TIMEZONE = 'America/Los_Angeles';
 const departmentOptions = ['Deli', 'Warehouse'];
 
 const cleanedByOptions = {
-  Deli: ['', 'Tamara', 'Jimmy', 'Verna', 'Stephania', 'Navi', 'Sonam'],
+  Deli: ['', 'Tamara', 'Jimmy', 'Berna', 'Stefania', 'Navi', 'Sonam', 'Stephanie'] ,
   Warehouse: ['', 'Gagi', 'Tate', 'Kirro']
 };
 

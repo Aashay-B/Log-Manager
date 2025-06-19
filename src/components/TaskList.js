@@ -12,6 +12,11 @@ function formatToPST(dateString) {
   const date = new Date(dateString);
   return format(date, 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: PST_TIMEZONE });
 }
+function formatDateOnly(dateString) {
+  const date = new Date(dateString);
+  return format(date, 'yyyy-MM-dd', { timeZone: PST_TIMEZONE });
+}
+
 
 const departments = ['All Departments', 'Deli', 'Warehouse'];
 
@@ -173,14 +178,16 @@ export default function TaskList() {
     logo.src = `${window.location.origin}/logo.png`;
 
     await new Promise((resolve) => (logo.onload = resolve));
-    doc.addImage(logo, 'PNG', 7, 2, 60, 40);
+    doc.addImage(logo, 'PNG', 7, 0, 50, 40);
+    
 
     doc.setFontSize(14);
     doc.text('Task Logs Export', 105, 20, { align: 'center' });
 
     const rangeText =
-      (exportStartDate ? `From: ${formatToPST(exportStartDate)}` : '') +
-      (exportEndDate ? ` To: ${formatToPST(exportEndDate + 'T23:59:59')}` : '');
+  (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
+  (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
+
 
     doc.setFontSize(10);
     doc.text(rangeText, 105, 28, { align: 'center' });
