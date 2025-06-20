@@ -129,14 +129,27 @@ export default function App() {
         </div>
       ) : (
         <>
-          <div className="text-center mt-4">
+          <div className="mb-6">
             <button
               onClick={() => setView('home')}
-              className="text-blue-500 underline"
+              className="
+                bg-blue-600 hover:bg-blue-700
+                text-white
+                font-semibold
+                px-6 py-3
+                rounded-md
+                shadow-lg
+                inline-flex items-center
+                space-x-3
+                transition
+                focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2
+              "
             >
-              ← Back to Home
+              <span className="text-3xl leading-none">←</span>
+              <span className="text-xl">Back to Home</span>
             </button>
           </div>
+
           <div className="mt-6 overflow-y-auto px-4">
             {view === 'taskForm' && <TaskForm />}
             {view === 'taskList' && <TaskList />}

@@ -21,15 +21,19 @@ const LOCATIONS = [
   'Meat Cutting Room',
 ];
 
-// Format date string as-is (assumed to be already PST), no timezone conversion
 function formatToPST(dateString) {
   const date = new Date(dateString);
-  return format(date, 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: "PST" });
+  return format(date, 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: 'America/Los_Angeles' });
+}
+
+function formatDateOnlyWithDay(dateString) {
+  const date = new Date(dateString);
+  return format(date, 'EEEE, yyyy-MM-dd'); // EEEE = full day name
 }
 
 function formatDateOnly(dateString) {
   const date = new Date(dateString);
-  return format(date, 'yyyy-MM-dd');  // removed timeZone option
+  return format(date, 'yyyy-MM-dd');
 }
 
 function Disclosure({ record }) {
@@ -78,57 +82,27 @@ function ExportModal({
     <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
         <h2 className="text-xl font-semibold mb-4 text-center">Export to PDF</h2>
-
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <select
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="border px-3 py-2 rounded w-full"
-            >
+            <select value={location} onChange={(e) => setLocation(e.target.value)} className="border px-3 py-2 rounded w-full">
               {LOCATIONS.map((loc) => (
                 <option key={loc} value={loc}>{loc}</option>
               ))}
             </select>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              max={todayStr}
-              className="border px-3 py-2 rounded w-full"
-            />
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} max={todayStr} className="border px-3 py-2 rounded w-full" />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              max={todayStr}
-              className="border px-3 py-2 rounded w-full"
-            />
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} max={todayStr} className="border px-3 py-2 rounded w-full" />
           </div>
         </div>
-
         <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onExport}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Export
-          </button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Cancel</button>
+          <button onClick={onExport} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Export</button>
         </div>
       </div>
     </div>
@@ -146,9 +120,7 @@ export default function TempRecordsList() {
   const [exportEndDate, setExportEndDate] = useState('');
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const firstOfMonthStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
+  const firstOfMonthStr = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
 
   useEffect(() => {
     setStartDate(firstOfMonthStr);
@@ -157,25 +129,16 @@ export default function TempRecordsList() {
   }, []);
 
   async function fetchRecords() {
-    const { data, error } = await supabase
-      .from('temp_records')
-      .select('*')
-      .order('recorded_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching temperature records:', error.message);
-    } else {
-      setRecords(data);
-    }
+    const { data, error } = await supabase.from('temp_records').select('*').order('recorded_at', { ascending: false });
+    if (error) console.error('Error fetching temperature records:', error.message);
+    else setRecords(data);
   }
 
   const filteredRecords = records.filter((record) => {
     const matchLocation = selectedLocation === 'All Locations' || record.location === selectedLocation;
-
     const recordDate = new Date(record.recorded_at);
     const matchStart = startDate ? recordDate >= new Date(startDate) : true;
     const matchEnd = endDate ? recordDate <= new Date(endDate + 'T23:59:59') : true;
-
     return matchLocation && matchStart && matchEnd;
   });
 
@@ -196,9 +159,8 @@ export default function TempRecordsList() {
     doc.text('Temperature Records Export', 105, 20, { align: 'center' });
 
     const rangeText =
-      (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
-      (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
-
+      (exportStartDate ? `From: ${formatDateOnlyWithDay(exportStartDate)}` : '') +
+      (exportEndDate ? ` To: ${formatDateOnlyWithDay(exportEndDate)}` : '');
     doc.setFontSize(10);
     doc.text(rangeText, 105, 28, { align: 'center' });
 
@@ -212,101 +174,85 @@ export default function TempRecordsList() {
       return matchLocation && matchStart && matchEnd;
     });
 
-    const groupedRecords = {};
+    const grouped = {};
     exportFilteredRecords.forEach((record) => {
-      if (!groupedRecords[record.location]) {
-        groupedRecords[record.location] = [];
-      }
-      groupedRecords[record.location].push(record);
+      if (!grouped[record.location]) grouped[record.location] = {};
+      const dateKey = formatDateOnly(record.recorded_at);
+      if (!grouped[record.location][dateKey]) grouped[record.location][dateKey] = [];
+      grouped[record.location][dateKey].push(record);
     });
 
-    for (const loc of Object.keys(groupedRecords)) {
-      const locRecords = groupedRecords[loc];
-
+    for (const loc of Object.keys(grouped)) {
       if (yOffset > 250) {
         doc.addPage();
         yOffset = 20;
       }
 
       doc.setFontSize(12);
-      doc.text(loc + ' Location', 14, yOffset);
+      doc.text(loc, 14, yOffset);
       yOffset += 6;
 
-      autoTable(doc, {
-        startY: yOffset,
-        head: [['Recorded At', 'Name', 'Temperature']],
-        body: locRecords.map((record) => [
-          formatToPST(record.recorded_at),
-          record.name,
-          `${record.temperature}°${record.unit}`,
-        ]),
-        styles: { fontSize: 9 },
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185] },
-        margin: { left: 14, right: 14 },
-        didDrawPage: (data) => {
-          yOffset = data.cursor.y + 10;
-        },
-      });
+      const dates = grouped[loc];
+      for (const date of Object.keys(dates)) {
+        doc.setFontSize(10);
+        // Use the day + date display for PDF
+        const dayDateText = formatDateOnlyWithDay(date);
+        doc.text(`Date: ${dayDateText}`, 16, yOffset);
+        yOffset += 4;
+
+        autoTable(doc, {
+          startY: yOffset,
+          head: [['Recorded At', 'Name', 'Temperature']],
+          body: dates[date].map((record) => [
+            formatToPST(record.recorded_at),
+            record.name,
+            `${record.temperature}°${record.unit}`,
+          ]),
+          styles: { fontSize: 9 },
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185] },
+          margin: { left: 14, right: 14 },
+          didDrawPage: (data) => {
+            yOffset = data.cursor.y + 10;
+          },
+        });
+      }
     }
 
-    doc.save('temperature_records_by_location.pdf');
+    doc.save('temperature_records_by_location_and_date.pdf');
   };
 
   return (
     <div className="max-w-3xl mx-auto p-4 bg-white rounded shadow">
       <h2 className="text-xl font-semibold mb-4 text-center">Temperature Records</h2>
 
-      {/* Filter Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-700">Filter by Location</label>
-          <select
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            className="px-4 py-2 border rounded w-full"
-          >
+          <select value={selectedLocation} onChange={(e) => setSelectedLocation(e.target.value)} className="px-4 py-2 border rounded w-full">
             {LOCATIONS.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
-              </option>
+              <option key={loc} value={loc}>{loc}</option>
             ))}
           </select>
         </div>
 
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-700">Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            max={todayStr}
-            className="px-4 py-2 border rounded w-full"
-          />
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} max={todayStr} className="px-4 py-2 border rounded w-full" />
         </div>
 
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-700">End Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            max={todayStr}
-            className="px-4 py-2 border rounded w-full"
-          />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} max={todayStr} className="px-4 py-2 border rounded w-full" />
         </div>
 
         <div className="flex items-end">
-          <button
-            onClick={resetFilters}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded w-full"
-          >
+          <button onClick={resetFilters} className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded w-full">
             Reset Filters
           </button>
         </div>
       </div>
 
-      {/* Export Button */}
       <div className="mb-4 text-right">
         <button
           onClick={() => {
@@ -321,7 +267,6 @@ export default function TempRecordsList() {
         </button>
       </div>
 
-      {/* Export Modal Popup */}
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
@@ -338,7 +283,6 @@ export default function TempRecordsList() {
         todayStr={todayStr}
       />
 
-      {/* Records List */}
       {filteredRecords.length === 0 ? (
         <p className="text-gray-600">No temperature records found for selected filters.</p>
       ) : (
@@ -346,11 +290,25 @@ export default function TempRecordsList() {
           const locRecords = filteredRecords.filter((rec) => rec.location === loc);
           if (locRecords.length === 0) return null;
 
+          const groupedByDate = {};
+          locRecords.forEach((rec) => {
+            const dateKey = formatDateOnly(rec.recorded_at);
+            if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+            groupedByDate[dateKey].push(rec);
+          });
+
           return (
-            <div key={loc} className="mb-6">
-              <h3 className="text-lg font-semibold mb-2 border-b pb-1">{loc} Records</h3>
-              {locRecords.map((record) => (
-                <Disclosure key={record.id} record={record} />
+            <div key={loc} className="mb-8">
+              <h3 className="text-xl font-semibold mb-3 border-b pb-2">{loc}</h3>
+              {Object.entries(groupedByDate).map(([date, dateRecords]) => (
+                <div key={date} className="mb-4">
+                  <h4 className="text-md font-medium mb-2 text-blue-700">{formatDateOnlyWithDay(date)}</h4>
+                  <div className="space-y-2">
+                    {dateRecords.map((record) => (
+                      <Disclosure key={record.id} record={record} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           );
