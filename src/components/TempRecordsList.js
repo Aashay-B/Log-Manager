@@ -151,20 +151,20 @@ export default function TempRecordsList() {
   const handleExportPDF = async () => {
     const doc = new jsPDF();
     const logo = new Image();
-    logo.src = `${window.location.origin}/logo.png`;
+    logo.src = `${window.location.origin}/Logo.jpg`;
     await new Promise((resolve) => (logo.onload = resolve));
-    doc.addImage(logo, 'PNG', 7, 0, 50, 40);
 
-    doc.setFontSize(14);
-    doc.text('Temperature Records Export', 105, 20, { align: 'center' });
-
-    const rangeText =
-      (exportStartDate ? `From: ${formatDateOnlyWithDay(exportStartDate)}` : '') +
-      (exportEndDate ? ` To: ${formatDateOnlyWithDay(exportEndDate)}` : '');
-    doc.setFontSize(10);
-    doc.text(rangeText, 105, 28, { align: 'center' });
-
-    let yOffset = 40;
+    // Helper to add header on each page
+    function addPageHeader() {
+      doc.addImage(logo, 'PNG', 7, 7, 40, 20);
+      doc.setFontSize(14);
+      doc.text('Temperature Records Export', 105, 20, { align: 'center' });
+      const rangeText =
+        (exportStartDate ? `From: ${formatDateOnlyWithDay(exportStartDate)}` : '') +
+        (exportEndDate ? ` To: ${formatDateOnlyWithDay(exportEndDate)}` : '');
+      doc.setFontSize(10);
+      doc.text(rangeText, 105, 28, { align: 'center' });
+    }
 
     const exportFilteredRecords = records.filter((record) => {
       const matchLocation = exportLocation === 'All Locations' || record.location === exportLocation;
@@ -182,23 +182,29 @@ export default function TempRecordsList() {
       grouped[record.location][dateKey].push(record);
     });
 
+    let firstPage = true;
+
     for (const loc of Object.keys(grouped)) {
-      if (yOffset > 250) {
+      if (!firstPage) {
         doc.addPage();
-        yOffset = 20;
+      } else {
+        firstPage = false;
       }
 
-      doc.setFontSize(12);
+      addPageHeader();
+
+      let yOffset = 40;
+
+      doc.setFontSize(16);
       doc.text(loc, 14, yOffset);
-      yOffset += 6;
+      yOffset += 10;
 
       const dates = grouped[loc];
       for (const date of Object.keys(dates)) {
-        doc.setFontSize(10);
-        // Use the day + date display for PDF
+        doc.setFontSize(12);
         const dayDateText = formatDateOnlyWithDay(date);
         doc.text(`Date: ${dayDateText}`, 16, yOffset);
-        yOffset += 4;
+        yOffset += 6;
 
         autoTable(doc, {
           startY: yOffset,
@@ -208,19 +214,33 @@ export default function TempRecordsList() {
             record.name,
             `${record.temperature}°${record.unit}`,
           ]),
-          styles: { fontSize: 9 },
+          styles: { fontSize: 10 },
           theme: 'grid',
           headStyles: { fillColor: [41, 128, 185] },
           margin: { left: 14, right: 14 },
           didDrawPage: (data) => {
             yOffset = data.cursor.y + 10;
+            if (doc.internal.getNumberOfPages() > 1 && yOffset < 50) {
+              addPageHeader();
+              doc.setFontSize(16);
+              doc.text(loc, 14, 40);
+              yOffset = 50;
+            }
           },
         });
       }
     }
 
-    doc.save('temperature_records_by_location_and_date.pdf');
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0'); // Months start at 0
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    const filename = `Temperature_Records_Exported_${yyyy}${mm}${dd}.pdf`;
+    doc.save(filename);
   };
+
+
 
   return (
     <div className="max-w-3xl mx-auto p-4 bg-white rounded shadow">
