@@ -270,7 +270,7 @@ export default function TempRecordsList() {
               <div className="font-bold text-gray-800">{record.name}</div>
               <div className="text-sm text-gray-600">{record.location}</div>
               <div className="text-sm text-gray-600">
-                Temp: <span className="font-semibold">{record.temperature}°C</span>
+                Temp: <span className="font-semibold">{record.temperature}°{record.unit}</span>
               </div>
               <div className="text-sm text-gray-500">{formatToPST(record.recorded_at)}</div>
             </div>

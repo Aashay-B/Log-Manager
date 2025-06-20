@@ -18,7 +18,14 @@ const locations = [
 ];
 
 export default function TempRecorderForm() {
-  const [name, setName] = useState('');
+  const [name, setName] = useState('Lavinder Deol');
+  function getLocalDateTimeString() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 16);
+  }
+  const [recordedAt, setRecordedAt] = useState(getLocalDateTimeString());
   const [temps, setTemps] = useState(
     locations.reduce((acc, loc) => {
       acc[loc] = { value: '', unit: 'C' };
@@ -66,13 +73,12 @@ export default function TempRecorderForm() {
 
     for (const [location, data] of Object.entries(temps)) {
       if (data.value !== '') {
-        const temperature =
-          data.unit === 'C' ? parseFloat(data.value) : ((parseFloat(data.value) - 32) * 5 / 9).toFixed(1);
-
         recordsToSubmit.push({
           name,
           location,
-          temperature,
+          temperature: parseFloat(data.value),
+          unit: data.unit,
+          recorded_at: recordedAt,
         });
       }
     }
@@ -89,6 +95,7 @@ export default function TempRecorderForm() {
     } else {
       alert('Temperature(s) recorded!');
       setName('');
+      setRecordedAt(new Date().toISOString().slice(0, 16));
       setTemps(
         locations.reduce((acc, loc) => {
           acc[loc] = { value: '', unit: 'C' };
@@ -111,7 +118,17 @@ export default function TempRecorderForm() {
             onChange={e => setName(e.target.value)}
             required
             className="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
-            placeholder="Enter your name"
+          />
+        </div>
+
+        <div>
+          <label className="block font-medium mb-2">Date & Time Recorded</label>
+          <input
+            type="datetime-local"
+            value={recordedAt}
+            onChange={(e) => setRecordedAt(e.target.value)}
+            required
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
           />
         </div>
 
