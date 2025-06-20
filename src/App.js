@@ -40,7 +40,7 @@ export default function App() {
     <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
       {/* Header */}
         <div className="bg-white text-gray-900 flex items-center justify-center gap-4 py-6 text-3xl font-bold shadow">
-          <img src="/logo.png" alt="Cioffi's Logo" className="h-20 w-auto" />
+          <img src="/logo.png" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
           Cioffi's Log Manager
         </div>
 
@@ -97,7 +97,7 @@ export default function App() {
 
       {/* Main Content */}
       {view === 'home' ? (
-        <div className="flex-grow flex items-center justify-center overflow-hidden">
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] pt-8">
           <div className="bg-white p-10 rounded-2xl shadow-xl text-center w-full max-w-md">
             <div className="flex flex-col space-y-10">
               <button
