@@ -92,36 +92,40 @@ export default function App() {
       )}
 
       {/* Home Buttons */}
+      {/* Home Buttons */}
       {view === 'home' && (
-        <div className="max-w-xl mx-auto bg-white p-6 rounded shadow text-center mt-6">
-          <div className="flex flex-col space-y-4">
-            <button
-              onClick={() => setView('taskForm')}
-              className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-            >
-              Task Form
-            </button>
-            <button
-              onClick={() => handleProtectedView('taskList')}
-              className="bg-green-600 text-white py-2 rounded hover:bg-green-700"
-            >
-              Task List
-            </button>
-            <button
-              onClick={() => setView('tempRecorder')}
-              className="bg-red-600 text-white py-2 rounded hover:bg-red-700"
-            >
-              Temp Recorder
-            </button>
-            <button
-              onClick={() => handleProtectedView('tempList')}
-              className="bg-purple-600 text-white py-2 rounded hover:bg-yellow-700"
-            >
-              Temp Records
-            </button>
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <div className="bg-white p-10 rounded-2xl shadow-xl text-center w-full max-w-md">
+            <div className="flex flex-col space-y-10">
+              <button
+                onClick={() => setView('taskForm')}
+                className="bg-blue-600 text-white py-4 text-lg rounded-full hover:bg-blue-700 transition"
+              >
+                Task Form
+              </button>
+              <button
+                onClick={() => handleProtectedView('taskList')}
+                className="bg-green-600 text-white py-4 text-lg rounded-full hover:bg-green-700 transition"
+              >
+                Task List
+              </button>
+              <button
+                onClick={() => setView('tempRecorder')}
+                className="bg-red-600 text-white py-4 text-lg rounded-full hover:bg-red-700 transition"
+              >
+                Temp Recorder
+              </button>
+              <button
+                onClick={() => handleProtectedView('tempList')}
+                className="bg-purple-600 text-white py-4 text-lg rounded-full hover:bg-yellow-700 transition"
+              >
+                Temp Records
+              </button>
+            </div>
           </div>
         </div>
       )}
+
 
       {/* Back Button */}
       {view !== 'home' && (
