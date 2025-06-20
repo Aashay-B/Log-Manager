@@ -40,7 +40,7 @@ export default function App() {
     <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
       {/* Header */}
         <div className="bg-white text-gray-900 flex items-center justify-center gap-4 py-6 text-3xl font-bold shadow">
-          <img src="/logo.png" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
+          <img src="/Logo.jpg" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
           Cioffi's Log Manager
         </div>
 
