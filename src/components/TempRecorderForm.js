@@ -19,13 +19,16 @@ const locations = [
 
 export default function TempRecorderForm() {
   const [name, setName] = useState('Lavinder Deol');
+
   function getLocalDateTimeString() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const localDate = new Date(now.getTime() - offset * 60000);
-  return localDate.toISOString().slice(0, 16);
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - offset * 60000);
+    return localDate.toISOString().slice(0, 16);
   }
+
   const [recordedAt, setRecordedAt] = useState(getLocalDateTimeString());
+
   const [temps, setTemps] = useState(
     locations.reduce((acc, loc) => {
       acc[loc] = { value: '', unit: 'C' };
@@ -78,7 +81,7 @@ export default function TempRecorderForm() {
           location,
           temperature: parseFloat(data.value),
           unit: data.unit,
-          recorded_at: recordedAt,
+          recorded_at: new Date(recordedAt).toISOString(), // ← UTC conversion here
         });
       }
     }
