@@ -173,61 +173,70 @@ export default function TaskList() {
   };
 
   const handleExportPDF = async () => {
-    const doc = new jsPDF();
-    const logo = new Image();
-    logo.src = `${window.location.origin}/logo.png`;
+  const doc = new jsPDF();
+  const logo = new Image();
+  logo.src = `${window.location.origin}/Logo.jpg`;
 
-    await new Promise((resolve) => (logo.onload = resolve));
-    doc.addImage(logo, 'PNG', 7, 0, 50, 40);
-    
+  await new Promise((resolve) => (logo.onload = resolve));
 
+  // Header function for every page
+  function addPageHeader() {
+    doc.addImage(logo, 'PNG', 7, 7, 40, 20);
     doc.setFontSize(14);
     doc.text('Task Logs Export', 105, 20, { align: 'center' });
 
     const rangeText =
-  (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
-  (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
-
+      (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
+      (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
 
     doc.setFontSize(10);
     doc.text(rangeText, 105, 28, { align: 'center' });
+  }
+
+  // Helper to group by department → date
+  const groupedTasks = {};
+  tasks.forEach((task) => {
+    const matchesDept = exportDept === 'All Departments' || task.department === exportDept;
+    const taskTime = new Date(task.cleaning_time);
+    const matchesStart = exportStartDate ? taskTime >= new Date(exportStartDate) : true;
+    const matchesEnd = exportEndDate ? taskTime <= new Date(exportEndDate + 'T23:59:59') : true;
+
+    if (matchesDept && matchesStart && matchesEnd) {
+      const dept = task.department;
+      const dateKey = formatDateOnly(task.cleaning_time); // e.g., 2025-06-21
+      if (!groupedTasks[dept]) groupedTasks[dept] = {};
+      if (!groupedTasks[dept][dateKey]) groupedTasks[dept][dateKey] = [];
+      groupedTasks[dept][dateKey].push(task);
+    }
+  });
+
+  let firstPage = true;
+
+  for (const dept of Object.keys(groupedTasks)) {
+    if (!firstPage) doc.addPage();
+    firstPage = false;
+
+    addPageHeader();
 
     let yOffset = 40;
+    doc.setFontSize(12);
+    doc.text(`${dept} Department`, 14, yOffset);
+    yOffset += 6;
 
-    const exportFilteredTasks = tasks.filter((task) => {
-      const matchesDept = exportDept === 'All Departments' || task.department === exportDept;
+    const dates = groupedTasks[dept];
 
-      const taskTime = new Date(task.cleaning_time);
-      const matchesStart = exportStartDate ? taskTime >= new Date(exportStartDate) : true;
-      const matchesEnd = exportEndDate ? taskTime <= new Date(exportEndDate + 'T23:59:59') : true;
+    for (const date of Object.keys(dates)) {
+      const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+      const dayDate = `${dayName}, ${date}`;
 
-      return matchesDept && matchesStart && matchesEnd;
-    });
-
-    const groupedTasks = {};
-    exportFilteredTasks.forEach((task) => {
-      if (!groupedTasks[task.department]) {
-        groupedTasks[task.department] = [];
-      }
-      groupedTasks[task.department].push(task);
-    });
-
-    for (const dept of Object.keys(groupedTasks)) {
-      const deptTasks = groupedTasks[dept];
-
-      if (yOffset > 250) {
-        doc.addPage();
-        yOffset = 20;
-      }
-
-      doc.setFontSize(12);
-      doc.text(dept + ' Department', 14, yOffset);
+      doc.setFontSize(11);
+      doc.text(`Date: ${dayDate}`, 16, yOffset);
       yOffset += 6;
 
       autoTable(doc, {
         startY: yOffset,
         head: [['Cleaning Time', 'Cleaned By', 'Area/Equipment', 'Comments']],
-        body: deptTasks.map((task) => [
+        body: dates[date].map((task) => [
           formatToPST(task.cleaning_time),
           task.cleaned_by,
           task.area_equipment,
@@ -239,12 +248,31 @@ export default function TaskList() {
         margin: { left: 14, right: 14 },
         didDrawPage: (data) => {
           yOffset = data.cursor.y + 10;
+
+          // Re-add header if new page
+          const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+          if (yOffset < 50 && currentPage > 1) {
+            addPageHeader();
+            doc.setFontSize(12);
+            doc.text(`${dept} Department`, 14, 40);
+            yOffset = 50;
+          }
         },
       });
     }
+  }
 
-    doc.save('tasks_by_department.pdf');
-  };
+  // Add today's date to filename
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const filename = `tasks_by_department_${yyyy}${mm}${dd}.pdf`;
+
+  doc.save(filename);
+};
+
+
 
   return (
     <div className="max-w-3xl mx-auto p-4 bg-white rounded shadow">
