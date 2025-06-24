@@ -50,27 +50,32 @@ export default function App() {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow max-w-sm w-full">
             <h3 className="text-lg font-semibold mb-4 text-center">Enter Access Key</h3>
-            <input
-              type="password"
-              value={enteredKey}
-              onChange={(e) => setEnteredKey(e.target.value)}
-              placeholder="Access key"
-              className="w-full border rounded p-2 mb-4"
-            />
-            <div className="flex justify-between">
-              <button
-                onClick={() => setShowKeyModal(false)}
-                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={validateAccessKey}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-              >
-                Submit
-              </button>
-            </div>
+            <form onSubmit={(e) => { e.preventDefault(); validateAccessKey(); }}>
+              <input
+                type="password"
+                value={enteredKey}
+                onChange={(e) => setEnteredKey(e.target.value)}
+                placeholder="Access key"
+                className="w-full border rounded p-2 mb-4"
+                autoFocus
+              />
+              <div className="flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowKeyModal(false)}
+                  className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+
           </div>
         </div>
       )}
