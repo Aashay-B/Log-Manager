@@ -5,7 +5,6 @@ import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import TempRecorderForm from './components/TempRecorderForm';
 import TempRecordsList from './components/TempRecordsList';
-import Header from './components/Header';
 
 const ACCESS_KEY = '1234';
 
@@ -37,13 +36,19 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
-      {/* Header */}
-        <div className="bg-white text-gray-900 flex items-center justify-center gap-4 py-6 text-3xl font-bold shadow">
-          <img src="/Logo.jpg" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
-          Cioffi's Log Manager
-        </div>
+    <div
+        className="relative min-h-screen bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/background.jpg')" }}
+      >
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-white/10 z-0">
 
+       
+      {/* Header */}
+      <div className="bg-white text-gray-900 flex items-center justify-center gap-4 py-6 text-3xl font-bold shadow">
+        <img src="/Logo.jpg" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
+        Cioffi's Log Manager
+      </div>
 
       {/* Modals */}
       {showKeyModal && (
@@ -75,7 +80,6 @@ export default function App() {
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
@@ -103,7 +107,7 @@ export default function App() {
       {/* Main Content */}
       {view === 'home' ? (
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)] pt-8">
-          <div className="bg-white p-10 rounded-2xl shadow-xl text-center w-full max-w-md">
+          <div className="bg-white/90 p-10 rounded-2xl shadow-xl text-center w-full max-w-md">
             <div className="flex flex-col space-y-10">
               <button
                 onClick={() => setView('taskForm')}
@@ -137,25 +141,14 @@ export default function App() {
           <div className="mb-6">
             <button
               onClick={() => setView('home')}
-              className="
-                bg-blue-600 hover:bg-blue-700
-                text-white
-                font-semibold
-                px-6 py-3
-                rounded-md
-                shadow-lg
-                inline-flex items-center
-                space-x-3
-                transition
-                focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2
-              "
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-md shadow-lg inline-flex items-center space-x-3 transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
             >
               <span className="text-3xl leading-none">←</span>
               <span className="text-xl">Back to Home</span>
             </button>
           </div>
 
-          <div className="mt-6 overflow-y-auto px-4">
+          <div className="mt-6 overflow-y-auto px-4 pb-10">
             {view === 'taskForm' && <TaskForm />}
             {view === 'taskList' && <TaskList />}
             {view === 'tempRecorder' && <TempRecorderForm />}
@@ -163,6 +156,7 @@ export default function App() {
           </div>
         </>
       )}
+    </div>
     </div>
   );
 }
