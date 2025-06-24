@@ -212,16 +212,16 @@ export default function TaskList() {
     await new Promise((resolve) => (logo.onload = resolve));
 
     function addPageHeader() {
-      doc.addImage(logo, 'PNG', 7, 7, 40, 20);
+      doc.addImage(logo, 'PNG', 10, 6, 40, 20);
       doc.setFontSize(14);
-      doc.text('Task Logs Export', 105, 20, { align: 'center' });
+      doc.text('Task Logs Export', 105, 15, { align: 'center' });
 
       const rangeText =
         (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
         (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
 
       doc.setFontSize(10);
-      doc.text(rangeText, 105, 28, { align: 'center' });
+      doc.text(rangeText, 105, 23, { align: 'center' });
     }
 
     // Group tasks by department, then date

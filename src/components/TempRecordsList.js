@@ -190,12 +190,12 @@ export default function TempRecordsList() {
 
     logo.onload = () => {
       function header() {
-        doc.addImage(logo, 'PNG', 7, 7, 40, 20);
+        doc.addImage(logo, 'PNG', 10, 6, 40, 20);
         doc.setFontSize(14);
-        doc.text('Temperature Records Export', 105, 20, { align: 'center' });
+        doc.text('Temperature Records Export', 105, 15, { align: 'center' });
         const rTxt = `${expStart ? `From: ${formatDateOnly(expStart)}` : ''}${expEnd ? ` To: ${formatDateOnly(expEnd)}` : ''}`;
         doc.setFontSize(10);
-        doc.text(rTxt, 105, 28, { align: 'center' });
+        doc.text(rTxt, 105, 23, { align: 'center' });
       }
 
       const toExport = records.filter(r => {
