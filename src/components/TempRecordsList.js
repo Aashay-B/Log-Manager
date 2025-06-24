@@ -24,9 +24,9 @@ const LOCATIONS = [
   'Small Meat Cooler'
 ];
 
-function formatToPST(dt) {
-  return format(new Date(dt), 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: 'America/Los_Angeles' });
-}
+// function formatToPST(dt) {
+//   return format(new Date(dt), 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: 'America/Los_Angeles' });
+// }
 function formatDateOnlyWithDaytime(dt) {
   return format(new Date(dt), 'EEEE, yyyy-MM-dd hh:mm aaaa');
 }
@@ -230,7 +230,7 @@ export default function TempRecordsList() {
           body: recs.map(r => [
             formatDateOnlyWithDaytime(r.recorded_at),
             r.name,
-            `${r.temperature}°${r.unit}`
+            r.temperature === 'DEFROST' ? 'DEFROST' : `${r.temperature}°${r.unit}`
           ]),
           styles: { fontSize: 9 },
           theme: 'grid',
