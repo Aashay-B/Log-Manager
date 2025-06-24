@@ -61,7 +61,12 @@ function RecordTable({ records }) {
             return (
               <tr key={record.id} className={critical ? 'bg-red-100 text-red-700' : ''}>
                 <td className="px-4 py-2 border">{formatDateOnlyWithDaytime(record.recorded_at)}</td>
-                <td className="px-4 py-2 border">{record.temperature}°{record.unit}</td>
+                <td className="px-4 py-2 border">
+                  {record.temperature === 'DEFROST'
+                    ? 'DEFROST'
+                    : `${record.temperature}°${record.unit}`}
+                </td>
+
               </tr>
             );
           })}

@@ -70,43 +70,59 @@ export default function TempRecorderForm() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const recordsToSubmit = [];
+  const recordsToSubmit = [];
 
-    for (const [location, data] of Object.entries(temps)) {
-      if (data.value !== '') {
+  for (const [location, data] of Object.entries(temps)) {
+    const value = data.value.trim();
+
+    if (value !== '') {
+      if (value.toUpperCase() === 'DEF') {
         recordsToSubmit.push({
           name,
           location,
-          temperature: parseFloat(data.value),
-          unit: data.unit,
-          recorded_at: new Date(recordedAt).toISOString(), // ← UTC conversion here
+          temperature: "DEFROST",
+          unit: null,
+          recorded_at: new Date(recordedAt).toISOString(),
         });
+      } else if (!isNaN(parseFloat(value))) {
+        recordsToSubmit.push({
+          name,
+          location,
+          temperature: parseFloat(value),
+          unit: data.unit,
+          recorded_at: new Date(recordedAt).toISOString(),
+        });
+      } else {
+        alert(`Invalid input for ${location}. Please enter a number or "DEF".`);
+        return;
       }
     }
+  }
 
-    if (recordsToSubmit.length === 0) {
-      alert('Please enter at least one temperature.');
-      return;
-    }
+  if (recordsToSubmit.length === 0) {
+    alert('Please enter at least one temperature or DEF.');
+    return;
+  }
 
-    const { error } = await supabase.from('temp_records').insert(recordsToSubmit);
+  const { error } = await supabase.from('temp_records').insert(recordsToSubmit);
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      alert('Temperature(s) recorded!');
-      setName('');
-      setRecordedAt(new Date().toISOString().slice(0, 16));
-      setTemps(
-        locations.reduce((acc, loc) => {
-          acc[loc] = { value: '', unit: 'C' };
-          return acc;
-        }, {})
-      );
-    }
-  };
+  if (error) {
+    alert('Error: ' + error.message);
+  } else {
+    alert('Temperature(s) recorded!');
+    setName('');
+    setRecordedAt(getLocalDateTimeString());
+    setTemps(
+      locations.reduce((acc, loc) => {
+        acc[loc] = { value: '', unit: 'C' };
+        return acc;
+      }, {})
+    );
+  }
+};
+
 
   return (
     <div className="p-6 max-w-3xl mx-auto bg-white shadow rounded">
@@ -158,6 +174,9 @@ export default function TempRecorderForm() {
                       checked={temps[loc].unit === 'F'}
                       onChange={() => toggleUnit(loc)}
                       className="sr-only peer"
+                      disabled={temps[loc].value.trim().toUpperCase() === 'DEF' && (
+                                  <span className="text-xs text-gray-500">(Unit disabled for DEF)</span>
+                                )}
                     />
                     <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer dark:bg-gray-400 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                   </label>
