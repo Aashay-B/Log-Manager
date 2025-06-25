@@ -244,49 +244,79 @@ export default function TempRecordsList() {
   };
 
   const handleExportXLSX = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Temperature Records');
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Temperature Records');
 
-    sheet.columns = [
-      { header: 'Location', key: 'location', width: 30 },
-      { header: 'Date and Time', key: 'datetime', width: 30 },
-      { header: 'Temperature', key: 'temp', width: 20 }
-    ];
+ 
 
-    const toExport = records.filter(r => {
-      const mLoc = expLoc === 'All Locations' || r.location === expLoc;
-      const d = new Date(r.recorded_at);
-      const mStart = expStart ? d >= new Date(expStart) : true;
-      const mEnd = expEnd ? d <= new Date(expEnd + 'T23:59:59') : true;
-      return mLoc && mStart && mEnd;
-    });
+  // Add a blank row (row 2) for spacing
+  sheet.addRow([]);
 
-    toExport.forEach(r => {
-      const isCrit = isCriticalRecord(r);
-      const row = sheet.addRow({
-        location: r.location,
-        datetime: formatDateOnlyWithDaytime(r.recorded_at),
-        temp: r.temperature === 'DEFROST' ? 'DEFROST' : `${r.temperature}°${r.unit}`
-      });
+  // Define columns (headers will appear on row 3)
+  sheet.columns = [
+    { header: 'Location', key: 'location', width: 30 },
+    { header: 'Date and Time', key: 'datetime', width: 30 },
+    { header: 'Temperature', key: 'temp', width: 20 }
+  ];
 
-      if (isCrit) {
-        row.eachCell(cell => {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFFFCCCC' }  // light red background
-          };
-          cell.font = {
-            color: { argb: 'FF990000' },  // dark red text
-            bold: true
-          };
-        });
-      }
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `Temp_Records_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  // Filter records for export
+  const toExport = records.filter(r => {
+    const mLoc = expLoc === 'All Locations' || r.location === expLoc;
+    const d = new Date(r.recorded_at);
+    const mStart = expStart ? d >= new Date(expStart) : true;
+    const mEnd = expEnd ? d <= new Date(expEnd + 'T23:59:59') : true;
+    return mLoc && mStart && mEnd;
+  });
+ // Add the info line at the top (row 1), merge across all columns (A-C)
+  const infoText = `Location: ${expLoc} | Date Range: ${formatDateOnly(expStart)} to ${formatDateOnly(expEnd)}`;
+  sheet.mergeCells('A1:C1');
+  const infoCell = sheet.getCell('A1');
+  infoCell.value = infoText;
+  infoCell.font = { size: 12, bold: true };
+  infoCell.alignment = { horizontal: 'center' };
+  infoCell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFEEEEEE' }, // light gray background
   };
+  // Add data rows starting from row 4
+  toExport.forEach(r => {
+    const isCrit = isCriticalRecord(r);
+    const row = sheet.addRow({
+      location: r.location,
+      datetime: formatDateOnlyWithDaytime(r.recorded_at),
+      temp: r.temperature === 'DEFROST' ? 'DEFROST' : `${r.temperature}°${r.unit}`
+    });
+
+    if (isCrit) {
+      row.eachCell(cell => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFCCCC' }  // light red background
+        };
+        cell.font = {
+          color: { argb: 'FF990000' },  // dark red text
+          bold: true
+        };
+      });
+    }
+  });
+
+  // Optional: Auto filter on header row (row 3)
+  sheet.autoFilter = {
+    from: 'A3',
+    to: 'C3',
+  };
+
+  // Optional: Freeze panes (freeze top 3 rows)
+  sheet.views = [{ state: 'frozen', ySplit: 3 }];
+
+  // Generate file and trigger download
+  const buffer = await workbook.xlsx.writeBuffer();
+  saveAs(new Blob([buffer]), `Temp_Records_${new Date().toISOString().slice(0, 10)}.xlsx`);
+};
+
 
   const handleExport = () => {
     if (exportType === 'pdf') handleExportPDF();

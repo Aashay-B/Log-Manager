@@ -205,29 +205,57 @@ export default function TaskList() {
       return matchesDept && matchesStart && matchesEnd && matchesArea;
     });
 
-    // Prepare data rows
-    const data = tasksToExport.map((task) => {
-      const dt = new Date(task.cleaning_time);
-      const dayStr = dt.toLocaleDateString('en-US', { weekday: 'long' });
-      const dateStr = formatToPST(task.cleaning_time);
-      return {
-        Department: task.department,
-        'Area/Equipment': task.area_equipment || 'Unknown Area',
-        'Cleaned By': task.cleaned_by,
-        'Date Time and Day': `${dateStr} (${dayStr})`,
-      };
+    if (tasksToExport.length === 0) {
+      alert("No tasks found for the selected filters.");
+      return;
+    }
+
+    // Prepare and sort data rows
+    const data = tasksToExport
+      .sort((a, b) => new Date(a.cleaning_time) - new Date(b.cleaning_time))
+      .map((task) => {
+        const dt = new Date(task.cleaning_time);
+        const dayStr = dt.toLocaleDateString('en-US', { weekday: 'long' });
+        const dateStr = formatToPST(task.cleaning_time);
+        return {
+          'Department': task.department,
+          'Area/Equipment': task.area_equipment || 'Unknown Area',
+          'Cleaned By': task.cleaned_by,
+          'Date & Time (PST)': dateStr,
+          'Day': dayStr,
+          'Comments': task.comments || '',
+        };
+      });
+
+    // Create worksheet
+    const worksheet = XLSX.utils.json_to_sheet(data, {
+      origin: 'A3', // leave space for title
     });
 
-    // Create worksheet and workbook
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks');
+    // Add title row
+    const title = `Task Export - ${exportDept} - ${formatDateOnly(exportStartDate)} to ${formatDateOnly(exportEndDate)}`;
+    XLSX.utils.sheet_add_aoa(worksheet, [[title]], { origin: 'A1' });
 
-    // Write workbook and trigger download
+    // Style column widths automatically
+    const colWidths = Object.keys(data[0]).map((key) => {
+      const maxLen = Math.max(
+        key.length,
+        ...data.map((row) => (row[key] ? row[key].toString().length : 0))
+      );
+      return { wch: maxLen + 2 }; // add padding
+    });
+    worksheet['!cols'] = colWidths;
+
+    // Create workbook and export
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Task Logs');
+
+    const fileName = `task_export_${formatDateOnly(new Date())}.xlsx`;
     const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/octet-stream' });
-    saveAs(blob, `task_export_${formatDateOnly(new Date())}.xlsx`);
+    saveAs(blob, fileName);
   };
+
 
   // Export to PDF (grouped by department and date)
   const handleExportPDF = async () => {
