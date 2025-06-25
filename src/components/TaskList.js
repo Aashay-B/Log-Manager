@@ -10,6 +10,10 @@ import { saveAs } from 'file-saver';
 
 const PST_TIMEZONE = 'America/Los_Angeles';
 
+function formatDateOnlyWithDaytime(dt) {
+  return format(new Date(dt), 'EEEE, yyyy-MM-dd hh:mm aaaa');
+}
+
 function formatToPST(dateString) {
   const date = new Date(dateString);
   return format(date, 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: PST_TIMEZONE });
@@ -34,6 +38,9 @@ function ExportModal({
   endDate,
   setEndDate,
   todayStr,
+  area,
+  setArea,
+  areaOptions,
 }) {
   if (!isOpen) return null;
 
@@ -52,6 +59,21 @@ function ExportModal({
             >
               {departments.map((deptOption) => (
                 <option key={deptOption} value={deptOption}>{deptOption}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Area/Equipment</label>
+            <select
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              className="border px-3 py-2 rounded w-full"
+            >
+              <option value="All Areas">All Areas</option>
+              {areaOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
               ))}
             </select>
           </div>
@@ -126,6 +148,10 @@ export default function TaskList() {
   const [exportStartDate, setExportStartDate] = useState(firstOfMonthStr);
   const [exportEndDate, setExportEndDate] = useState(todayStr);
   const [exportFormat, setExportFormat] = useState('pdf'); // pdf or excel
+  const [exportArea, setExportArea] = useState('All Areas');
+
+  // Unique area/equipment options from tasks for dropdown
+  const areaOptions = [...new Set(tasks.map(t => t.area_equipment || 'Unknown Area'))];
 
   // Track expanded/collapsed state per area/equipment group
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -170,13 +196,13 @@ export default function TaskList() {
 
   // Export to Excel
   const exportToExcel = () => {
-    // Filter tasks for export according to export modal filters
     const tasksToExport = tasks.filter((task) => {
       const matchesDept = exportDept === 'All Departments' || task.department === exportDept;
+      const matchesArea = exportArea === 'All Areas' || (task.area_equipment || 'Unknown Area') === exportArea;
       const taskTime = new Date(task.cleaning_time);
       const matchesStart = exportStartDate ? taskTime >= new Date(exportStartDate) : true;
       const matchesEnd = exportEndDate ? taskTime <= new Date(exportEndDate + 'T23:59:59') : true;
-      return matchesDept && matchesStart && matchesEnd;
+      return matchesDept && matchesStart && matchesEnd && matchesArea;
     });
 
     // Prepare data rows
@@ -203,103 +229,79 @@ export default function TaskList() {
     saveAs(blob, `task_export_${formatDateOnly(new Date())}.xlsx`);
   };
 
-  // Export to PDF (existing code with grouping by department & date)
+  // Export to PDF (grouped by department and date)
   const handleExportPDF = async () => {
-    const doc = new jsPDF();
-    const logo = new Image();
-    logo.src = `${window.location.origin}/Logo.jpg`;
+  const doc = new jsPDF();
+  const logo = new Image();
+  logo.src = `${window.location.origin}/Logo.jpg`;
 
-    await new Promise((resolve) => (logo.onload = resolve));
+  await new Promise((resolve) => (logo.onload = resolve));
 
-    function addPageHeader() {
-      doc.addImage(logo, 'PNG', 10, 6, 40, 20);
-      doc.setFontSize(14);
-      doc.text('Task Logs Export', 105, 15, { align: 'center' });
+  function addPageHeader(dept) {
+    doc.addImage(logo, 'PNG', 10, 6, 40, 20);
+    doc.setFontSize(14);
+    doc.text('Task Logs Export', 105, 15, { align: 'center' });
 
-      const rangeText =
-        (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
-        (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
+    const rangeText =
+      (exportStartDate ? `From: ${formatDateOnly(exportStartDate)}` : '') +
+      (exportEndDate ? ` To: ${formatDateOnly(exportEndDate)}` : '');
 
-      doc.setFontSize(10);
-      doc.text(rangeText, 105, 23, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(rangeText, 105, 23, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.text(`${dept} Department`, 14, 35);
+  }
+
+  const groupedTasks = {};
+  tasks.forEach((task) => {
+    const matchesDept = exportDept === 'All Departments' || task.department === exportDept;
+    const matchesArea = exportArea === 'All Areas' || (task.area_equipment || 'Unknown Area') === exportArea;
+    const taskTime = new Date(task.cleaning_time);
+    const matchesStart = exportStartDate ? taskTime >= new Date(exportStartDate) : true;
+    const matchesEnd = exportEndDate ? taskTime <= new Date(exportEndDate + 'T23:59:59') : true;
+
+    if (matchesDept && matchesStart && matchesEnd && matchesArea) {
+      const dept = task.department;
+      if (!groupedTasks[dept]) groupedTasks[dept] = [];
+      groupedTasks[dept].push(task);
     }
+  });
 
-    // Group tasks by department, then date
-    const groupedTasks = {};
-    tasks.forEach((task) => {
-      const matchesDept = exportDept === 'All Departments' || task.department === exportDept;
-      const taskTime = new Date(task.cleaning_time);
-      const matchesStart = exportStartDate ? taskTime >= new Date(exportStartDate) : true;
-      const matchesEnd = exportEndDate ? taskTime <= new Date(exportEndDate + 'T23:59:59') : true;
+  let firstPage = true;
+  for (const dept of Object.keys(groupedTasks)) {
+    if (!firstPage) doc.addPage();
+    firstPage = false;
 
-      if (matchesDept && matchesStart && matchesEnd) {
-        const dept = task.department;
-        const dateKey = formatDateOnly(task.cleaning_time);
-        if (!groupedTasks[dept]) groupedTasks[dept] = {};
-        if (!groupedTasks[dept][dateKey]) groupedTasks[dept][dateKey] = [];
-        groupedTasks[dept][dateKey].push(task);
-      }
+    addPageHeader(dept);
+
+    const tasksForDept = groupedTasks[dept];
+
+    autoTable(doc, {
+      startY: 45,
+      head: [['Cleaning Time', 'Cleaned By', 'Area/Equipment', 'Comments']],
+      body: tasksForDept.map((task) => [
+        formatDateOnlyWithDaytime(task.cleaning_time),
+        task.cleaned_by,
+        task.area_equipment || 'Unknown Area',
+        task.comments || '',
+      ]),
+      styles: { fontSize: 9 },
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185] },
+      margin: { left: 14, right: 14 },
     });
+  }
 
-    let firstPage = true;
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const filename = `tasks_by_department_${yyyy}${mm}${dd}.pdf`;
 
-    for (const dept of Object.keys(groupedTasks)) {
-      if (!firstPage) doc.addPage();
-      firstPage = false;
+  doc.save(filename);
+};
 
-      addPageHeader();
-
-      let yOffset = 40;
-      doc.setFontSize(12);
-      doc.text(`${dept} Department`, 14, yOffset);
-      yOffset += 6;
-
-      const dates = groupedTasks[dept];
-
-      for (const date of Object.keys(dates)) {
-        const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
-        const dayDate = `${dayName}, ${date}`;
-
-        doc.setFontSize(11);
-        doc.text(`Date: ${dayDate}`, 16, yOffset);
-        yOffset += 6;
-
-        autoTable(doc, {
-          startY: yOffset,
-          head: [['Cleaning Time', 'Cleaned By', 'Area/Equipment', 'Comments']],
-          body: dates[date].map((task) => [
-            formatToPST(task.cleaning_time),
-            task.cleaned_by,
-            task.area_equipment,
-            task.comments || '',
-          ]),
-          styles: { fontSize: 9 },
-          theme: 'grid',
-          headStyles: { fillColor: [41, 128, 185] },
-          margin: { left: 14, right: 14 },
-          didDrawPage: (data) => {
-            yOffset = data.cursor.y + 10;
-
-            const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-            if (yOffset < 50 && currentPage > 1) {
-              addPageHeader();
-              doc.setFontSize(12);
-              doc.text(`${dept} Department`, 14, 40);
-              yOffset = 50;
-            }
-          },
-        });
-      }
-    }
-
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    const filename = `tasks_by_department_${yyyy}${mm}${dd}.pdf`;
-
-    doc.save(filename);
-  };
 
   // Main export handler triggered by export modal's Export button
   const handleExport = () => {
@@ -414,6 +416,9 @@ export default function TaskList() {
         endDate={exportEndDate}
         setEndDate={setExportEndDate}
         todayStr={todayStr}
+        area={exportArea}
+        setArea={setExportArea}
+        areaOptions={areaOptions}
       />
 
       {/* Task List Section */}

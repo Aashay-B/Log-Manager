@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import { format } from 'date-fns-tz';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
 const LOCATIONS = [
@@ -24,15 +24,33 @@ const LOCATIONS = [
   'Small Meat Cooler'
 ];
 
-// function formatToPST(dt) {
-//   return format(new Date(dt), 'yyyy-MM-dd hh:mm aaaa zzz', { timeZone: 'America/Los_Angeles' });
-// }
 function formatDateOnlyWithDaytime(dt) {
   return format(new Date(dt), 'EEEE, yyyy-MM-dd hh:mm aaaa');
 }
 function formatDateOnly(dt) {
   return format(new Date(dt), 'yyyy-MM-dd');
 }
+
+function isCriticalRecord(record) {
+  const loc = (record.location || '').toLowerCase();
+  const isFridge = loc.includes('refrigerator') || loc.includes('cooler');
+  const isFreezer = loc.includes('freezer');
+
+  const temp = record.temperature;
+
+  if (temp === 'DEFROST') return false;
+
+  const tempVal = parseFloat(temp);
+  if (isNaN(tempVal)) return false;
+
+  if (record.unit === 'C') {
+    return (isFridge && tempVal > 4) || (isFreezer && tempVal > -16);
+  } else if (record.unit === 'F') {
+    return (isFridge && tempVal > 39.2) || (isFreezer && tempVal > -0.4);
+  }
+  return false;
+}
+
 
 function RecordTable({ records }) {
   return (
@@ -46,27 +64,13 @@ function RecordTable({ records }) {
         </thead>
         <tbody>
           {records.map(record => {
-            const loc = record.location.toLowerCase();
-            const isFridge = loc.includes('refrigerator') || loc.includes('cooler');
-            const isFreezer = loc.includes('freezer');
-            const isCritical = () => {
-              if (record.unit === 'C') {
-                return (isFridge && record.temperature > 4) || (isFreezer && record.temperature > -18);
-              } else if (record.unit === 'F') {
-                return (isFridge && record.temperature > 39.2) || (isFreezer && record.temperature > -0.4);
-              }
-              return false;
-            };
-            const critical = isCritical();
+            const critical = isCriticalRecord(record);
             return (
               <tr key={record.id} className={critical ? 'bg-red-100 text-red-700' : ''}>
                 <td className="px-4 py-2 border">{formatDateOnlyWithDaytime(record.recorded_at)}</td>
                 <td className="px-4 py-2 border">
-                  {record.temperature === 'DEFROST'
-                    ? 'DEFROST'
-                    : `${record.temperature}°${record.unit}`}
+                  {record.temperature === 'DEFROST' ? 'DEFROST' : `${record.temperature}°${record.unit}`}
                 </td>
-
               </tr>
             );
           })}
@@ -158,7 +162,6 @@ export default function TempRecordsList() {
     return mLoc && mStart && mEnd;
   });
 
-  // Group and sort location keys alphabetically
   const filteredByLocation = {};
   filtered.forEach(r => {
     if (!filteredByLocation[r.location]) filteredByLocation[r.location] = [];
@@ -167,22 +170,6 @@ export default function TempRecordsList() {
 
   const sortedLocations = Object.keys(filteredByLocation).sort();
 
-  const reset = () => {
-    setLocFilter('All Locations');
-    setStartDate(firstOfMonth);
-    setEndDate(today);
-  };
-
-  const handleExpandCollapseAll = () => {
-    const newOpenState = {};
-    if (!allExpanded) {
-      sortedLocations.forEach(loc => newOpenState[loc] = true);
-    }
-    setOpenLocations(newOpenState);
-    setAllExpanded(!allExpanded);
-  };
-
-  // PDF export
   const handleExportPDF = () => {
     const doc = new jsPDF();
     const logo = new Image();
@@ -235,7 +222,18 @@ export default function TempRecordsList() {
           styles: { fontSize: 9 },
           theme: 'grid',
           headStyles: { fillColor: [41, 128, 185] },
-          margin: { left: 14, right: 14 }
+          margin: { left: 14, right: 14 },
+          didParseCell: function (data) {
+            const rowIndex = data.row.index;
+            const colIndex = data.column.index;
+            const record = recs[rowIndex];
+
+            if (isCriticalRecord(record)) {
+              data.cell.styles.fillColor = [255, 230, 230]; // light red background
+              data.cell.styles.textColor = [153, 0, 0];     // dark red text
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
         });
       });
 
@@ -245,51 +243,70 @@ export default function TempRecordsList() {
     };
   };
 
-  // XLSX export
-  const handleExportXLSX = () => {
-  const toExport = records.filter(r => {
-    const mLoc = expLoc === 'All Locations' || r.location === expLoc;
-    const d = new Date(r.recorded_at);
-    const mStart = expStart ? d >= new Date(expStart) : true;
-    const mEnd = expEnd ? d <= new Date(endDate + 'T23:59:59') : true;
-    return mLoc && mStart && mEnd;
-  });
+  const handleExportXLSX = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Temperature Records');
 
-  toExport.sort((a, b) => {
-    if (a.location < b.location) return -1;
-    if (a.location > b.location) return 1;
-    return new Date(a.recorded_at) - new Date(b.recorded_at);
-  });
+    sheet.columns = [
+      { header: 'Location', key: 'location', width: 30 },
+      { header: 'Date and Time', key: 'datetime', width: 30 },
+      { header: 'Temperature', key: 'temp', width: 20 }
+    ];
 
-  const wsData = [
-    ['Location', 'Date and Time', 'Temperature']
-  ];
+    const toExport = records.filter(r => {
+      const mLoc = expLoc === 'All Locations' || r.location === expLoc;
+      const d = new Date(r.recorded_at);
+      const mStart = expStart ? d >= new Date(expStart) : true;
+      const mEnd = expEnd ? d <= new Date(expEnd + 'T23:59:59') : true;
+      return mLoc && mStart && mEnd;
+    });
 
-  toExport.forEach(r => {
-    wsData.push([
-      r.location,
-      formatDateOnlyWithDaytime(r.recorded_at), // <-- include day name here
-      `${r.temperature}°${r.unit}`
-    ]);
-  });
+    toExport.forEach(r => {
+      const isCrit = isCriticalRecord(r);
+      const row = sheet.addRow({
+        location: r.location,
+        datetime: formatDateOnlyWithDaytime(r.recorded_at),
+        temp: r.temperature === 'DEFROST' ? 'DEFROST' : `${r.temperature}°${r.unit}`
+      });
 
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Temperature Records');
+      if (isCrit) {
+        row.eachCell(cell => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFCCCC' }  // light red background
+          };
+          cell.font = {
+            color: { argb: 'FF990000' },  // dark red text
+            bold: true
+          };
+        });
+      }
+    });
 
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([wbout], { type: 'application/octet-stream' });
-  saveAs(blob, `Temp_Records_${new Date().toISOString().slice(0,10)}.xlsx`);
-};
-
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Temp_Records_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
 
   const handleExport = () => {
-    if (exportType === 'pdf') {
-      handleExportPDF();
-    } else if (exportType === 'xlsx') {
-      handleExportXLSX();
-    }
+    if (exportType === 'pdf') handleExportPDF();
+    else handleExportXLSX();
     setShowExport(false);
+  };
+
+  const reset = () => {
+    setLocFilter('All Locations');
+    setStartDate(firstOfMonth);
+    setEndDate(today);
+  };
+
+  const handleExpandCollapseAll = () => {
+    const newOpenState = {};
+    if (!allExpanded) {
+      sortedLocations.forEach(loc => newOpenState[loc] = true);
+    }
+    setOpenLocations(newOpenState);
+    setAllExpanded(!allExpanded);
   };
 
   return (
@@ -306,23 +323,15 @@ export default function TempRecordsList() {
       </div>
 
       <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={handleExpandCollapseAll}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
+        <button onClick={handleExpandCollapseAll} className="px-4 py-2 bg-blue-600 text-white rounded">
           {allExpanded ? 'Collapse All' : 'Expand All'}
         </button>
-        <button
-          onClick={() => {
-            setExpLoc(locFilter);
-            setExpStart(startDate);
-            setExpEnd(endDate);
-            setShowExport(true);
-          }}
-          className="bg-red-600 text-white px-4 py-2 rounded"
-        >
-          Export
-        </button>
+        <button onClick={() => {
+          setExpLoc(locFilter);
+          setExpStart(startDate);
+          setExpEnd(endDate);
+          setShowExport(true);
+        }} className="bg-red-600 text-white px-4 py-2 rounded">Export</button>
       </div>
 
       {filtered.length === 0 ? (
@@ -333,15 +342,7 @@ export default function TempRecordsList() {
           const isOpen = openLocations[loc];
           return (
             <div key={loc} className="mb-6 border rounded">
-              <div
-                onClick={() =>
-                  setOpenLocations(prev => ({
-                    ...prev,
-                    [loc]: !prev[loc]
-                  }))
-                }
-                className="p-3 bg-gray-100 cursor-pointer flex justify-between items-center"
-              >
+              <div onClick={() => setOpenLocations(prev => ({ ...prev, [loc]: !prev[loc] }))} className="p-3 bg-gray-100 cursor-pointer flex justify-between items-center">
                 <h4 className="text-lg font-semibold text-gray-700">
                   {loc} <span className="text-sm text-gray-500">({recs.length} record{recs.length !== 1 ? 's' : ''})</span>
                 </h4>

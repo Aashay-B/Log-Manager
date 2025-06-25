@@ -16,7 +16,7 @@ export default function App() {
   const [showGifError, setShowGifError] = useState(false);
 
   useEffect(() => {
-    document.title = "Cioffi's Log Manager";
+    document.title = "CLM";
   }, []);
 
   const handleProtectedView = (viewName) => {
@@ -47,7 +47,7 @@ export default function App() {
       {/* Header */}
       <div className="bg-white text-gray-900 flex items-center justify-center gap-4 py-6 text-3xl font-bold shadow">
         <img src="/Logo.jpg" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
-        Cioffi's Log Manager
+        Cioffi's Log Manager CLM
       </div>
 
       {/* Modals */}
