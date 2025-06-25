@@ -462,10 +462,9 @@ export default function TaskList() {
                 onClick={() => setExpandedGroups((prev) => ({ ...prev, [area]: !isOpen }))}
                 className="bg-gray-100 px-4 py-3 font-semibold text-gray-800 cursor-pointer flex justify-between"
               >
-                <span>{area}</span>
+                <span className="text-lg font-semibold text-gray-600">{area} <span className="text-sm text-gray-500">({entries.length} record{entries.length !== 1 ? 's' : ''})</span></span>
                 <span className="text-sm text-blue-600">{isOpen ? '▲ Hide' : '▼ Show'}</span>
               </div>
-
               {isOpen && (
                 <table className="w-full text-sm table-auto border-t">
                   <thead>
