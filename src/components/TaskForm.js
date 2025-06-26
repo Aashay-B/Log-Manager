@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { fromZonedTime } from 'date-fns-tz';
+import { fromZonedTime, format } from 'date-fns-tz';
 
 const PST_TIMEZONE = 'America/Los_Angeles';
-
+const pstNow = format(new Date(), "yyyy-MM-dd'T'HH:mm", { timeZone: 'America/Los_Angeles' });
 const departmentOptions = ['Deli', 'Warehouse'];
 
 const cleanedByOptions = {
@@ -96,7 +96,8 @@ export default function TaskForm() {
           id="cleaning_time"
           type="datetime-local"
           name="cleaning_time"
-          value={form.cleaning_time}
+          // defaultValue={form.cleaning_time}
+          value={form.cleaning_time || pstNow}
           onChange={handleChange}
           className="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-blue-300"
           required
