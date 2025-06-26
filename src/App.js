@@ -5,6 +5,7 @@ import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import TempRecorderForm from './components/TempRecorderForm';
 import TempRecordsList from './components/TempRecordsList';
+import { Toaster } from 'react-hot-toast';
 
 const ACCESS_KEY = '1234';
 
@@ -37,7 +38,7 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen bg-fixed bg-center bg-cover bg-no-repeat" style={{ backgroundImage: "url('/background.jpg')" }}>
-      
+      <Toaster position="top-center"/>
       {/* HEADER (NO GRADIENT) */}
       <header className="bg-white text-gray-900 flex items-center justify-center gap-4 py-6 text-3xl font-bold shadow relative z-20">
         <img src="/Logo.jpg" alt="Cioffi's Logo" className="h-16 md:h-20 lg:h-24" />
