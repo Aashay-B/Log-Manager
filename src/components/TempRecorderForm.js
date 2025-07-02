@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 const locations = [
   'Deli Refrigerator 1',
@@ -18,8 +18,11 @@ const locations = [
   'Meat Cutting Room',
 ];
 
+const defaultName = 'Lavinder Deol';
+
 export default function TempRecorderForm() {
-  const [name, setName] = useState('Lavinder Deol');
+  const [name, setName] = useState(defaultName);
+  const [submitting, setSubmitting] = useState(false);
 
   function getLocalDateTimeString() {
     const now = new Date();
@@ -72,6 +75,8 @@ export default function TempRecorderForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
 
     const recordsToSubmit = [];
 
@@ -96,24 +101,40 @@ export default function TempRecorderForm() {
             recorded_at: new Date(recordedAt).toISOString(),
           });
         } else {
-          toast.error(`Invalid input for ${location}. Please enter a number or "DEF".`);
+          toast.error(`Invalid input for ${location}. Please enter a number or "DEF".`, {
+            style: { fontSize: '1.1rem', padding: '16px' },
+          });
+          setSubmitting(false);
           return;
         }
       }
     }
 
     if (recordsToSubmit.length === 0) {
-      toast.error('Please enter at least one temperature or DEF.');
+      toast.error('Please enter at least one temperature or DEF.', {
+        style: { fontSize: '1.1rem', padding: '16px' },
+      });
+      setSubmitting(false);
       return;
     }
 
+    const toastId = toast.loading('Submitting...', {
+      style: { fontSize: '1.1rem', padding: '16px' },
+    });
+
     const { error } = await supabase.from('temp_records').insert(recordsToSubmit);
 
+    toast.dismiss(toastId);
+
     if (error) {
-      toast.error(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`, {
+        style: { fontSize: '1.1rem', padding: '16px' },
+      });
     } else {
-      toast.success('Temperature(s) recorded!');
-      setName('');
+      toast.success('Temperature(s) recorded!', {
+        style: { fontSize: '1.1rem', padding: '16px' },
+      });
+      setName(defaultName); // Reset name back to Lavinder Deol
       setRecordedAt(getLocalDateTimeString());
       setTemps(
         locations.reduce((acc, loc) => {
@@ -122,10 +143,13 @@ export default function TempRecorderForm() {
         }, {})
       );
     }
+
+    setSubmitting(false);
   };
 
   return (
     <div className="p-6 max-w-3xl mx-auto bg-white shadow rounded">
+      <Toaster position="top-center" reverseOrder={false} /> {/* For toast popups */}
       <h2 className="text-xl font-semibold mb-6 text-center">Temperature Recorder</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -188,9 +212,14 @@ export default function TempRecorderForm() {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition"
+          disabled={submitting}
+          className={`w-full font-semibold py-3 rounded-lg transition ${
+            submitting
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
-          Submit Temperatures
+          {submitting ? 'Submitting...' : 'Submit Temperatures'}
         </button>
       </form>
     </div>

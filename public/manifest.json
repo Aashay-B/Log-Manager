@@ -1,20 +1,20 @@
 {
-  "short_name": "Log Manager",
+  "short_name": "CLM",
   "name": "Log Manager",
   "icons": [
     {
       "src": "Logo.jpg",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/png"
+      "type": "image/jpg"
     },
     {
       "src": "Logo.jpg",
-      "type": "image/png",
+      "type": "image/jpg",
       "sizes": "192x192"
     },
     {
       "src": "Logo.jpg",
-      "type": "image/png",
+      "type": "image/jpg",
       "sizes": "512x512"
     }
   ],
