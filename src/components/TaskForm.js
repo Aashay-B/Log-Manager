@@ -14,16 +14,24 @@ const cleanedByOptions = {
 };
 
 const areaEquipmentOptions = {
-  Deli: ['', 'Floors', 'Detail Cleaning', 'End of Shift Cleaning', 'Grater', 'Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'],
+  Deli: ['', 'New Shift Dry Cleaning','Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer', 'Grater', 'End of Shift Cleaning', 'Weekly Cleaning'],
   Warehouse: ['', 'Floors', 'Racks', 'Detail Cleaning', 'Bins']
 };
+
+// Function to get current local datetime in "YYYY-MM-DDTHH:mm" format
+function getLocalDateTimeString() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const localDate = new Date(now.getTime() - offset * 60000);
+  return localDate.toISOString().slice(0, 16);
+}
 
 export default function TaskForm() {
   const [form, setForm] = useState({
     department: 'Deli',
-    cleaning_time: '',
-    cleaned_by: '',
-    area_equipment: '',
+    cleaning_time: getLocalDateTimeString(),
+    cleaned_by: cleanedByOptions['Deli'][0],
+    area_equipment: areaEquipmentOptions['Deli'][0],
     comments: ''
   });
 
@@ -62,7 +70,7 @@ export default function TaskForm() {
         toast.success('Cleaning log submitted!');
         setForm({
           department: 'Deli',
-          cleaning_time: '',
+          cleaning_time: getLocalDateTimeString(),
           cleaned_by: cleanedByOptions['Deli'][0],
           area_equipment: areaEquipmentOptions['Deli'][0],
           comments: ''
