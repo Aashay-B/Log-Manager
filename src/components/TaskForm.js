@@ -18,7 +18,6 @@ const areaEquipmentOptions = {
   Warehouse: ['', 'Floors', 'Racks', 'Detail Cleaning', 'Bins']
 };
 
-// Function to get current local datetime in "YYYY-MM-DDTHH:mm" format
 function getLocalDateTimeString() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
@@ -50,37 +49,57 @@ export default function TaskForm() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const localDate = new Date(form.cleaning_time);
-      const pstDate = fromZonedTime(localDate, PST_TIMEZONE);
-
-      const taskData = {
-        ...form,
-        cleaning_time: pstDate.toISOString()
-      };
-
-      const { error } = await supabase.from('tasks').insert([taskData]);
-
-      if (error) {
-        toast.error('Error: ' + error.message);
-      } else {
-        toast.success('Cleaning log submitted!');
-        setForm({
-          department: 'Deli',
-          cleaning_time: getLocalDateTimeString(),
-          cleaned_by: cleanedByOptions['Deli'][0],
-          area_equipment: areaEquipmentOptions['Deli'][0],
-          comments: ''
-        });
-      }
-    } catch (err) {
-      console.error('Time conversion error:', err);
-      toast.error('Error converting time. Please check your input.');
-    }
+  const showToast = (message, type = 'success') => {
+    toast[type](message, {
+      className: 'custom-toast',
+      bodyClassName: 'custom-toast-body',
+      closeButton: false,
+    });
   };
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Validation: Prevent submitting if name or area/equipment is empty
+  if (!form.cleaned_by || form.cleaned_by.trim() === '') {
+    showToast('Please select who cleaned it.', 'error');
+    return;
+  }
+
+  if (!form.area_equipment || form.area_equipment.trim() === '') {
+    showToast('Please select an area or equipment.', 'error');
+    return;
+  }
+
+  try {
+    const localDate = new Date(form.cleaning_time);
+    const pstDate = fromZonedTime(localDate, PST_TIMEZONE);
+
+    const taskData = {
+      ...form,
+      cleaning_time: pstDate.toISOString()
+    };
+
+    const { error } = await supabase.from('tasks').insert([taskData]);
+
+    if (error) {
+      showToast('❌ Error: ' + error.message, 'error');
+    } else {
+      showToast('✅ Cleaning log submitted successfully!');
+      setForm({
+        department: 'Deli',
+        cleaning_time: getLocalDateTimeString(),
+        cleaned_by: cleanedByOptions['Deli'][0],
+        area_equipment: areaEquipmentOptions['Deli'][0],
+        comments: ''
+      });
+    }
+  } catch (err) {
+    console.error('Time conversion error:', err);
+    showToast('❌ Error converting time. Please check your input.', 'error');
+  }
+};
+
 
   return (
     <>
@@ -166,7 +185,33 @@ export default function TaskForm() {
         </button>
       </form>
 
-      <ToastContainer position="top-center" autoClose={3000} hideProgressBar />
+      <ToastContainer
+        position="top-center"
+        autoClose={3500}
+        hideProgressBar
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
+      <style jsx="true">{`
+        .custom-toast {
+          font-size: 1.25rem;
+          padding: 16px 24px;
+          border-radius: 12px;
+          background-color: #1e293b !important; /* slate-800 */
+          color: #fff !important;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .custom-toast-body {
+          font-weight: 500;
+          line-height: 1.4;
+        }
+      `}</style>
     </>
   );
 }
