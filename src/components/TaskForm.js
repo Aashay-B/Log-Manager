@@ -186,32 +186,40 @@ export default function TaskForm() {
       </form>
 
       <ToastContainer
-        position="top-center"
-        autoClose={3500}
-        hideProgressBar
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      position="top-center"
+      autoClose={3500}
+      hideProgressBar
+      newestOnTop
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      toastClassName="custom-toast"
+      bodyClassName="custom-toast-body"
+      className="toast-container"
+    />
 
-      <style jsx="true">{`
-        .custom-toast {
-          font-size: 1.25rem;
-          padding: 16px 24px;
-          border-radius: 12px;
-          background-color: #1e293b !important; /* slate-800 */
-          color: #fff !important;
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
+    <style jsx="true">{`
+      .custom-toast {
+        font-size: 1.25rem;
+        padding: 30px 24px;
+        border-radius: 12px;
+        background-color: #1e293b !important; /* slate-800 */
+        color: #fff !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
 
-        .custom-toast-body {
-          font-weight: 500;
-          line-height: 1.4;
-        }
-      `}</style>
+      .custom-toast-body {
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      .toast-container {
+        z-index: 9999 !important;
+        position: fixed !important;
+      }
+    `}</style>
     </>
   );
 }
