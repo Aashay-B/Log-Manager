@@ -83,9 +83,9 @@ export default function TaskForm() {
     const { error } = await supabase.from('tasks').insert([taskData]);
 
     if (error) {
-      showToast('❌ Error: ' + error.message, 'error');
+      showToast('Error: ' + error.message, 'error');
     } else {
-      showToast('✅ Cleaning log submitted successfully!');
+      showToast('Cleaning log submitted successfully!');
       setForm({
         department: 'Deli',
         cleaning_time: getLocalDateTimeString(),
@@ -96,7 +96,7 @@ export default function TaskForm() {
     }
   } catch (err) {
     console.error('Time conversion error:', err);
-    showToast('❌ Error converting time. Please check your input.', 'error');
+    showToast('Error converting time. Please check your input.', 'error');
   }
 };
 
