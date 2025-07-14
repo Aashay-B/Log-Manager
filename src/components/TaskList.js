@@ -451,50 +451,60 @@ export default function TaskList() {
 
       {/* Task List Section */}
       {filteredTasks.length === 0 ? (
-        <p className="text-gray-600">No tasks found for selected filters.</p>
-      ) : (
-        Object.entries(groupedByArea).map(([area, entries]) => {
-          const isOpen = expandedGroups[area] ?? false;
+  <p className="text-gray-600">No tasks found for selected filters.</p>
+) : (
+  Object.entries(groupedByArea).map(([area, entries]) => {
+    const isOpen = expandedGroups[area] ?? false;
 
-          return (
-            <div key={area} className="mb-4 border rounded shadow">
-              <div
-                onClick={() => setExpandedGroups((prev) => ({ ...prev, [area]: !isOpen }))}
-                className="bg-gray-100 px-4 py-3 font-semibold text-gray-800 cursor-pointer flex justify-between"
-              >
-                <span className="text-lg font-semibold text-gray-700">{area} <span className="text-sm text-gray-500">({entries.length} record{entries.length !== 1 ? 's' : ''})</span></span>
-                <span className="text-sm text-blue-600">{isOpen ? '▲ Hide' : '▼ Show'}</span>
-              </div>
-              {isOpen && (
-                <table className="w-full text-sm table-auto border-t">
-                  <thead>
-                    <tr className="bg-gray-50 text-left">
-                      <th className="px-4 py-2 border">Cleaned By</th>
-                      <th className="px-4 py-2 border">Date</th>
-                      <th className="px-4 py-2 border">Day</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.map((entry) => {
-                      const dt = new Date(entry.cleaning_time);
-                      const dateStr = formatToPST(dt);
-                      const dayStr = dt.toLocaleDateString('en-US', { weekday: 'long' });
+    // Check if cleaning_type column should be shown
+    const showCleaningType = ['Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'].includes(area);
 
-                      return (
-                        <tr key={entry.id} className="border-t">
-                          <td className="px-4 py-2 border">{entry.cleaned_by}</td>
-                          <td className="px-4 py-2 border">{dateStr}</td>
-                          <td className="px-4 py-2 border">{dayStr}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          );
-        })
-      )}
+    return (
+      <div key={area} className="mb-4 border rounded shadow">
+        <div
+          onClick={() => setExpandedGroups((prev) => ({ ...prev, [area]: !isOpen }))}
+          className="bg-gray-100 px-4 py-3 font-semibold text-gray-800 cursor-pointer flex justify-between"
+        >
+          <span className="text-lg font-semibold text-gray-700">
+            {area} <span className="text-sm text-gray-500">({entries.length} record{entries.length !== 1 ? 's' : ''})</span>
+          </span>
+          <span className="text-sm text-blue-600">{isOpen ? '▲ Hide' : '▼ Show'}</span>
+        </div>
+
+        {isOpen && (
+          <table className="w-full text-sm table-auto border-t">
+            <thead>
+              <tr className="bg-gray-50 text-left">
+                <th className="px-4 py-2 border">Cleaned By</th>
+                <th className="px-4 py-2 border">Date</th>
+                <th className="px-4 py-2 border">Day</th>
+                {showCleaningType && <th className="px-4 py-2 border">Cleaning Type</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => {
+                const dt = new Date(entry.cleaning_time);
+                const dateStr = formatToPST(dt);
+                const dayStr = dt.toLocaleDateString('en-US', { weekday: 'long' });
+
+                return (
+                  <tr key={entry.id} className="border-t">
+                    <td className="px-4 py-2 border">{entry.cleaned_by}</td>
+                    <td className="px-4 py-2 border">{dateStr}</td>
+                    <td className="px-4 py-2 border">{dayStr}</td>
+                    {showCleaningType && (
+                      <td className="px-4 py-2 border">{entry.cleaning_type || '—'}</td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    );
+  })
+)}
     </div>
   );
 }

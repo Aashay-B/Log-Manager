@@ -34,6 +34,8 @@ export default function TaskForm() {
     comments: ''
   });
 
+  const [cleaningType, setCleaningType] = useState('');
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -44,6 +46,9 @@ export default function TaskForm() {
         cleaned_by: cleanedByOptions[value][0],
         area_equipment: areaEquipmentOptions[value][0]
       }));
+    } else if (name === 'area_equipment') {
+      setForm((prev) => ({ ...prev, [name]: value }));
+      setCleaningType(''); // reset cleaning type if area changes
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -58,48 +63,57 @@ export default function TaskForm() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Validation: Prevent submitting if name or area/equipment is empty
-  if (!form.cleaned_by || form.cleaned_by.trim() === '') {
-    showToast('Please select who cleaned it.', 'error');
-    return;
-  }
+    const requiresCleaningType = ['Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'].includes(form.area_equipment);
 
-  if (!form.area_equipment || form.area_equipment.trim() === '') {
-    showToast('Please select an area or equipment.', 'error');
-    return;
-  }
-
-  try {
-    const localDate = new Date(form.cleaning_time);
-    const pstDate = fromZonedTime(localDate, PST_TIMEZONE);
-
-    const taskData = {
-      ...form,
-      cleaning_time: pstDate.toISOString()
-    };
-
-    const { error } = await supabase.from('tasks').insert([taskData]);
-
-    if (error) {
-      showToast('Error: ' + error.message, 'error');
-    } else {
-      showToast('Cleaning log submitted successfully!');
-      setForm({
-        department: 'Deli',
-        cleaning_time: getLocalDateTimeString(),
-        cleaned_by: cleanedByOptions['Deli'][0],
-        area_equipment: areaEquipmentOptions['Deli'][0],
-        comments: ''
-      });
+    if (!form.cleaned_by || form.cleaned_by.trim() === '') {
+      showToast('Please select who cleaned it.', 'error');
+      return;
     }
-  } catch (err) {
-    console.error('Time conversion error:', err);
-    showToast('Error converting time. Please check your input.', 'error');
-  }
-};
 
+    if (!form.area_equipment || form.area_equipment.trim() === '') {
+      showToast('Please select an area or equipment.', 'error');
+      return;
+    }
+
+    if (requiresCleaningType && !cleaningType) {
+      showToast('Please select a cleaning type.', 'error');
+      return;
+    }
+
+    try {
+      const localDate = new Date(form.cleaning_time);
+      const pstDate = fromZonedTime(localDate, PST_TIMEZONE);
+
+      const taskData = {
+        ...form,
+        cleaning_type: requiresCleaningType ? cleaningType : '',
+        cleaning_time: pstDate.toISOString()
+      };
+
+      const { error } = await supabase.from('tasks').insert([taskData]);
+
+      if (error) {
+        showToast('Error: ' + error.message, 'error');
+      } else {
+        showToast('Cleaning log submitted successfully!');
+        setForm({
+          department: 'Deli',
+          cleaning_time: getLocalDateTimeString(),
+          cleaned_by: cleanedByOptions['Deli'][0],
+          area_equipment: areaEquipmentOptions['Deli'][0],
+          comments: ''
+        });
+        setCleaningType('');
+      }
+    } catch (err) {
+      console.error('Time conversion error:', err);
+      showToast('Error converting time. Please check your input.', 'error');
+    }
+  };
+
+  const requiresCleaningType = ['Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'].includes(form.area_equipment);
 
   return (
     <>
@@ -164,6 +178,34 @@ export default function TaskForm() {
           </select>
         </div>
 
+        {requiresCleaningType && (
+          <div className="mb-4">
+            <label className="block font-medium mb-2 text-gray-700">Cleaning Type</label>
+            <div className="flex flex-col space-y-3">
+              {['Dry Cleaning/Sanitization', 'Detailed Cleaning'].map((type) => (
+                <label
+                  key={type}
+                  className={`flex items-center p-3 border rounded-lg cursor-pointer transition ${
+                    cleaningType === type
+                      ? 'bg-blue-50 border-blue-500 text-blue-700 font-semibold'
+                      : 'bg-white border-gray-300 hover:border-blue-400'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="cleaning_type"
+                    value={type}
+                    checked={cleaningType === type}
+                    onChange={(e) => setCleaningType(e.target.value)}
+                    className="form-radio text-blue-600 h-4 w-4 mr-3"
+                  />
+                  {type}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mb-4">
           <label htmlFor="comments" className="block font-medium mb-1">Comments / Notes</label>
           <textarea
@@ -186,40 +228,40 @@ export default function TaskForm() {
       </form>
 
       <ToastContainer
-      position="top-center"
-      autoClose={3500}
-      hideProgressBar
-      newestOnTop
-      closeOnClick
-      rtl={false}
-      pauseOnFocusLoss
-      draggable
-      pauseOnHover
-      toastClassName="custom-toast"
-      bodyClassName="custom-toast-body"
-      className="toast-container"
-    />
+        position="top-center"
+        autoClose={3500}
+        hideProgressBar
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        toastClassName="custom-toast"
+        bodyClassName="custom-toast-body"
+        className="toast-container"
+      />
 
-    <style jsx="true">{`
-      .custom-toast {
-        font-size: 1.25rem;
-        padding: 30px 24px;
-        border-radius: 12px;
-        background-color: #1e293b !important; /* slate-800 */
-        color: #fff !important;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-      }
+      <style jsx="true">{`
+        .custom-toast {
+          font-size: 1.25rem;
+          padding: 30px 24px;
+          border-radius: 12px;
+          background-color: #1e293b !important;
+          color: #fff !important;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
 
-      .custom-toast-body {
-        font-weight: 500;
-        line-height: 1.4;
-      }
+        .custom-toast-body {
+          font-weight: 500;
+          line-height: 1.4;
+        }
 
-      .toast-container {
-        z-index: 9999 !important;
-        position: fixed !important;
-      }
-    `}</style>
+        .toast-container {
+          z-index: 9999 !important;
+          position: fixed !important;
+        }
+      `}</style>
     </>
   );
 }
