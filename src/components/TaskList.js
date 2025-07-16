@@ -484,7 +484,7 @@ const toggleAll = () => {
 
           return (
             <div key={deptName} className="mb-8">
-              <h3 className="text-xl font-bold text-blue-600 mb-4 border-b pb-2">{deptName} Department</h3>
+              <h3 className="text-xl font-bold text-black-600 mb-4 border-b pb-2">{deptName}</h3>
 
               {Object.entries(groupedAreas).map(([area, entries]) => {
                 const key = `${deptName}-${area}`;
