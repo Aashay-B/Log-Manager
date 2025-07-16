@@ -342,18 +342,27 @@ export default function TaskList() {
   };
 
   // Toggle all expand/collapse
-  const toggleAll = () => {
-    const allAreas = Object.keys(groupedByArea);
-    const allExpanded = allAreas.every((area) => expandedGroups[area]);
-    const newExpandedState = {};
-    allAreas.forEach((area) => {
-      newExpandedState[area] = !allExpanded; // toggle all
-    });
-    setExpandedGroups(newExpandedState);
-  };
+const toggleAll = () => {
+  const allGroupKeys = [];
 
-  const allExpanded = Object.keys(groupedByArea).length > 0 &&
-    Object.keys(groupedByArea).every(area => expandedGroups[area]);
+  Object.entries(groupedByArea).forEach(([area, areaTasks]) => {
+    // Find the department name for this area
+    areaTasks.forEach((task) => {
+      const dept = task.department || 'Unknown Department';
+      const groupKey = `${dept}-${area}`;
+      allGroupKeys.push(groupKey);
+    });
+  });
+
+  const allCurrentlyExpanded = allGroupKeys.every((key) => expandedGroups[key]);
+
+  const newExpandedState = {};
+  allGroupKeys.forEach((key) => {
+    newExpandedState[key] = !allCurrentlyExpanded;
+  });
+
+  setExpandedGroups(newExpandedState);
+};
 
   return (
     <div className="max-w-3xl mx-auto p-4 bg-white rounded shadow">
@@ -369,9 +378,7 @@ export default function TaskList() {
             className="px-4 py-2 border rounded w-full"
           >
             {departments.map((dept) => (
-              <option key={dept} value={dept}>
-                {dept}
-              </option>
+              <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
         </div>
@@ -414,8 +421,15 @@ export default function TaskList() {
           onClick={toggleAll}
           className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
         >
-          {allExpanded ? 'Collapse All' : 'Expand All'}
+          {
+            filteredTasks
+              .map(task => `${task.department || 'Unknown Department'}-${task.area_equipment || 'Unknown Area'}`)
+              .every(key => expandedGroups[key])
+              ? 'Collapse All'
+              : 'Expand All'
+          }
         </button>
+
         <button
           onClick={() => {
             setExportDept(selectedDept);
@@ -430,7 +444,7 @@ export default function TaskList() {
         </button>
       </div>
 
-      {/* Export Modal Popup */}
+      {/* Export Modal */}
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
@@ -449,62 +463,94 @@ export default function TaskList() {
         areaOptions={areaOptions}
       />
 
-      {/* Task List Section */}
+      {/* Task List */}
       {filteredTasks.length === 0 ? (
-  <p className="text-gray-600">No tasks found for selected filters.</p>
-) : (
-  Object.entries(groupedByArea).map(([area, entries]) => {
-    const isOpen = expandedGroups[area] ?? false;
+        <p className="text-gray-600 text-center mt-4">No tasks found for selected filters.</p>
+      ) : (
+        Object.entries(
+          filteredTasks.reduce((acc, task) => {
+            const dept = task.department || 'Unknown Department';
+            if (!acc[dept]) acc[dept] = [];
+            acc[dept].push(task);
+            return acc;
+          }, {})
+        ).map(([deptName, deptTasks]) => {
+          const groupedAreas = deptTasks.reduce((acc, task) => {
+            const area = task.area_equipment || 'Unknown Area';
+            if (!acc[area]) acc[area] = [];
+            acc[area].push(task);
+            return acc;
+          }, {});
 
-    // Check if cleaning_type column should be shown
-    const showCleaningType = ['Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'].includes(area);
+          return (
+            <div key={deptName} className="mb-8">
+              <h3 className="text-xl font-bold text-blue-600 mb-4 border-b pb-2">{deptName} Department</h3>
 
-    return (
-      <div key={area} className="mb-4 border rounded shadow">
-        <div
-          onClick={() => setExpandedGroups((prev) => ({ ...prev, [area]: !isOpen }))}
-          className="bg-gray-100 px-4 py-3 font-semibold text-gray-800 cursor-pointer flex justify-between"
-        >
-          <span className="text-lg font-semibold text-gray-700">
-            {area} <span className="text-sm text-gray-500">({entries.length} record{entries.length !== 1 ? 's' : ''})</span>
-          </span>
-          <span className="text-sm text-blue-600">{isOpen ? '▲ Hide' : '▼ Show'}</span>
-        </div>
-
-        {isOpen && (
-          <table className="w-full text-sm table-auto border-t">
-            <thead>
-              <tr className="bg-gray-50 text-left">
-                <th className="px-4 py-2 border">Cleaned By</th>
-                <th className="px-4 py-2 border">Date</th>
-                <th className="px-4 py-2 border">Day</th>
-                {showCleaningType && <th className="px-4 py-2 border">Cleaning Type</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => {
-                const dt = new Date(entry.cleaning_time);
-                const dateStr = formatToPST(dt);
-                const dayStr = dt.toLocaleDateString('en-US', { weekday: 'long' });
+              {Object.entries(groupedAreas).map(([area, entries]) => {
+                const key = `${deptName}-${area}`;
+                const isOpen = expandedGroups[key] ?? false;
+                const showCleaningType = ['Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer'].includes(area);
 
                 return (
-                  <tr key={entry.id} className="border-t">
-                    <td className="px-4 py-2 border">{entry.cleaned_by}</td>
-                    <td className="px-4 py-2 border">{dateStr}</td>
-                    <td className="px-4 py-2 border">{dayStr}</td>
-                    {showCleaningType && (
-                      <td className="px-4 py-2 border">{entry.cleaning_type || '—'}</td>
+                  <div key={key} className="mb-4 border rounded shadow">
+                    <div
+                      onClick={() =>
+                        setExpandedGroups((prev) => ({
+                          ...prev,
+                          [key]: !isOpen,
+                        }))
+                      }
+                      className="bg-gray-100 px-4 py-3 font-semibold text-gray-800 cursor-pointer flex justify-between"
+                    >
+                      <span className="text-lg font-semibold text-gray-700">
+                        {area}{' '}
+                        <span className="text-sm text-gray-500">
+                          ({entries.length} record{entries.length !== 1 ? 's' : ''})
+                        </span>
+                      </span>
+                      <span className="text-sm text-blue-600">{isOpen ? '▲ Hide' : '▼ Show'}</span>
+                    </div>
+
+                    {isOpen && (
+                      <table className="w-full text-sm table-auto border-t">
+                        <thead>
+                          <tr className="bg-gray-50 text-left">
+                            <th className="px-4 py-2 border">Cleaned By</th>
+                            <th className="px-4 py-2 border">Date</th>
+                            <th className="px-4 py-2 border">Day</th>
+                            {showCleaningType && (
+                              <th className="px-4 py-2 border">Cleaning Type</th>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {entries.map((entry) => {
+                            const dt = new Date(entry.cleaning_time);
+                            const dateStr = formatToPST(dt);
+                            const dayStr = dt.toLocaleDateString('en-US', { weekday: 'long' });
+
+                            return (
+                              <tr key={entry.id} className="border-t">
+                                <td className="px-4 py-2 border">{entry.cleaned_by}</td>
+                                <td className="px-4 py-2 border">{dateStr}</td>
+                                <td className="px-4 py-2 border">{dayStr}</td>
+                                {showCleaningType && (
+                                  <td className="px-4 py-2 border">{entry.cleaning_type || '—'}</td>
+                                )}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     )}
-                  </tr>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    );
-  })
-)}
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
+
