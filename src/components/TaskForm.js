@@ -15,7 +15,7 @@ const cleanedByOptions = {
 
 const areaEquipmentOptions = {
   Deli: ['', 'New Shift Dry Cleaning','Meat Slicer 1', 'Meat Slicer 2', 'Cheese Slicer', 'Grater', 'End of Shift Cleaning', 'Weekly Cleaning'],
-  Warehouse: ['', 'Floors', 'Racks', 'Detail Cleaning', 'Bins']
+  Warehouse: ['','Detail Cleaning', 'End of Shift Cleaning']
 };
 
 function getLocalDateTimeString() {
